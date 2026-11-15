@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "P": {
+      "item": "minecraft:packed_ice"
+    },
+    "R": {
+      "tag": "forge:ingots/rimerite"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    }
+  },
+  "pattern": [
+    "PRP",
+    "RFR",
+    "PRP"
+  ],
+  "result": {
+    "item": "ohnomoremeteors:frostery"
+  }
+}

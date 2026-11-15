@@ -1,0 +1,302 @@
+{
+  "block.cindrite.break": {
+    "sounds": [
+      "ohnomoremeteors:block/cindrite/break1",
+      "ohnomoremeteors:block/cindrite/break2",
+      "ohnomoremeteors:block/cindrite/break3",
+      "ohnomoremeteors:block/cindrite/break4"
+    ],
+    "subtitle": "subtitles.block.generic.break"
+  },
+  "block.cindrite.step": {
+    "sounds": [
+      "ohnomoremeteors:block/cindrite/step1",
+      "ohnomoremeteors:block/cindrite/step2",
+      "ohnomoremeteors:block/cindrite/step3",
+      "ohnomoremeteors:block/cindrite/step4",
+      "ohnomoremeteors:block/cindrite/step5",
+      "ohnomoremeteors:block/cindrite/step6"
+    ]
+  },
+  "block.cindrite.place": {
+    "sounds": [
+      "ohnomoremeteors:block/cindrite/place1",
+      "ohnomoremeteors:block/cindrite/place2",
+      "ohnomoremeteors:block/cindrite/place3"
+    ],
+    "subtitle": "subtitles.block.generic.place"
+  },
+  "block.cindrite.hit": {
+    "sounds": [
+      "ohnomoremeteors:block/cindrite/hit1",
+      "ohnomoremeteors:block/cindrite/hit2",
+      "ohnomoremeteors:block/cindrite/hit3",
+      "ohnomoremeteors:block/cindrite/hit4"
+    ]
+  },
+  "block.cindrite.fall": {
+    "sounds": [
+      "ohnomoremeteors:block/cindrite/fall1",
+      "ohnomoremeteors:block/cindrite/fall2"
+    ]
+  },
+  "block.rimerite.break": {
+    "sounds": [
+      "ohnomoremeteors:block/rimerite/break1",
+      "ohnomoremeteors:block/rimerite/break2",
+      "ohnomoremeteors:block/rimerite/break3",
+      "ohnomoremeteors:block/rimerite/break4"
+    ],
+    "subtitle": "subtitles.block.generic.break"
+  },
+  "block.rimerite.step": {
+    "sounds": [
+      "ohnomoremeteors:block/rimerite/step1",
+      "ohnomoremeteors:block/rimerite/step2",
+      "ohnomoremeteors:block/rimerite/step3",
+      "ohnomoremeteors:block/rimerite/step4",
+      "ohnomoremeteors:block/rimerite/step5",
+      "ohnomoremeteors:block/rimerite/step6"
+    ]
+  },
+  "block.rimerite.place": {
+    "sounds": [
+      "ohnomoremeteors:block/rimerite/place1",
+      "ohnomoremeteors:block/rimerite/place2",
+      "ohnomoremeteors:block/rimerite/place3"
+    ],
+    "subtitle": "subtitles.block.generic.place"
+  },
+  "block.rimerite.hit": {
+    "sounds": [
+      "ohnomoremeteors:block/rimerite/hit1",
+      "ohnomoremeteors:block/rimerite/hit2",
+      "ohnomoremeteors:block/rimerite/hit3",
+      "ohnomoremeteors:block/rimerite/hit4"
+    ]
+  },
+  "block.rimerite.fall": {
+    "sounds": [
+      "ohnomoremeteors:block/rimerite/fall1",
+      "ohnomoremeteors:block/rimerite/fall2"
+    ]
+  },
+  "block.meteoric_rock.break": {
+    "sounds": [
+      "ohnomoremeteors:block/meteoric_rock/break1",
+      "ohnomoremeteors:block/meteoric_rock/break2",
+      "ohnomoremeteors:block/meteoric_rock/break3",
+      "ohnomoremeteors:block/meteoric_rock/break4"
+    ],
+    "subtitle": "subtitles.block.generic.break"
+  },
+  "block.meteoric_rock.step": {
+    "sounds": [
+      "ohnomoremeteors:block/meteoric_rock/step1",
+      "ohnomoremeteors:block/meteoric_rock/step2",
+      "ohnomoremeteors:block/meteoric_rock/step3",
+      "ohnomoremeteors:block/meteoric_rock/step4",
+      "ohnomoremeteors:block/meteoric_rock/step5",
+      "ohnomoremeteors:block/meteoric_rock/step6"
+    ]
+  },
+  "block.meteoric_rock.place": {
+    "sounds": [
+      "ohnomoremeteors:block/meteoric_rock/place1",
+      "ohnomoremeteors:block/meteoric_rock/place2",
+      "ohnomoremeteors:block/meteoric_rock/place3"
+    ],
+    "subtitle": "subtitles.block.generic.place"
+  },
+  "block.meteoric_rock.hit": {
+    "sounds": [
+      "ohnomoremeteors:block/meteoric_rock/hit1",
+      "ohnomoremeteors:block/meteoric_rock/hit2",
+      "ohnomoremeteors:block/meteoric_rock/hit3",
+      "ohnomoremeteors:block/meteoric_rock/hit4"
+    ]
+  },
+  "block.meteoric_rock.fall": {
+    "sounds": [
+      "ohnomoremeteors:block/meteoric_rock/fall1",
+      "ohnomoremeteors:block/meteoric_rock/fall2"
+    ]
+  },
+  "distant.meteor.far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/meteor/far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/meteor/far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/meteor/far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.meteor"
+  },
+  "distant.meteor.very_far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/meteor/very_far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/meteor/very_far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/meteor/very_far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.meteor"
+  },
+  "distant.cindrite.far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/cindrite/far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/cindrite/far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/cindrite/far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.cindrite"
+  },
+  "distant.cindrite.very_far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/cindrite/very_far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/cindrite/very_far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/cindrite/very_far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.cindrite"
+  },
+  "distant.rimerite.far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/rimerite/far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/rimerite/far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/rimerite/far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.rimerite"
+  },
+  "distant.rimerite.very_far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/rimerite/very_far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/rimerite/very_far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/rimerite/very_far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.rimerite"
+  },
+  "block.veyrite.break": {
+    "sounds": [
+      "ohnomoremeteors:block/veyrite/break1",
+      "ohnomoremeteors:block/veyrite/break2",
+      "ohnomoremeteors:block/veyrite/break3",
+      "ohnomoremeteors:block/veyrite/break4"
+    ],
+    "subtitle": "subtitles.block.generic.break"
+  },
+  "block.veyrite.step": {
+    "sounds": [
+      "ohnomoremeteors:block/veyrite/step1",
+      "ohnomoremeteors:block/veyrite/step2",
+      "ohnomoremeteors:block/veyrite/step3",
+      "ohnomoremeteors:block/veyrite/step4",
+      "ohnomoremeteors:block/veyrite/step5",
+      "ohnomoremeteors:block/veyrite/step6"
+    ]
+  },
+  "block.veyrite.place": {
+    "sounds": [
+      "ohnomoremeteors:block/veyrite/place1",
+      "ohnomoremeteors:block/veyrite/place2",
+      "ohnomoremeteors:block/veyrite/place3"
+    ],
+    "subtitle": "subtitles.block.generic.place"
+  },
+  "block.veyrite.hit": {
+    "sounds": [
+      "ohnomoremeteors:block/veyrite/hit1",
+      "ohnomoremeteors:block/veyrite/hit2",
+      "ohnomoremeteors:block/veyrite/hit3",
+      "ohnomoremeteors:block/veyrite/hit4"
+    ]
+  },
+  "block.veyrite.fall": {
+    "sounds": [
+      "ohnomoremeteors:block/veyrite/fall1",
+      "ohnomoremeteors:block/veyrite/fall2"
+    ]
+  },
+  "distant.veyrite.far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/veyrite/far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/veyrite/far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/veyrite/far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.veyrite"
+  },
+  "distant.veyrite.very_far": {
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:distant/veyrite/very_far/1",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/veyrite/very_far/2",
+        "attenuation_distance": 16
+      },
+      {
+        "name": "ohnomoremeteors:distant/veyrite/very_far/3",
+        "attenuation_distance": 16
+      }
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.distant.veyrite"
+  }
+}

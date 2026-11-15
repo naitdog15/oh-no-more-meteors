@@ -1,0 +1,8 @@
+{
+  "replace": false,
+  "values": [
+    "#forge:nuggets/meteoric_alloy",
+    "#forge:nuggets/rimerite",
+    "#forge:nuggets/cindrite"
+  ]
+}

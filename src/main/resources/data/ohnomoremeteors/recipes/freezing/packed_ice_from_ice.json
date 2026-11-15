@@ -1,0 +1,11 @@
+{
+  "type": "ohnomoremeteors:freezing",
+  "ingredient": {
+    "item": "minecraft:ice"
+  },
+  "result": {
+    "item": "minecraft:packed_ice"
+  },
+  "experience": 0.2,
+  "cookingtime": 2400
+}

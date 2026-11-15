@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ohnomoremeteors:raw_veyrite_block"
+    }
+  ],
+  "result": {
+    "item": "ohnomoremeteors:raw_veyrite",
+    "count": 9
+  }
+}

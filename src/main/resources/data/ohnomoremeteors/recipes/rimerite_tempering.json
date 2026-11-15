@@ -1,0 +1,11 @@
+{
+  "type": "ohnomoremeteors:rimerite_tempering",
+  "ingredient": {
+    "tag": "ohnomoremeteors:rimerite_gear"
+  },
+  "result": {
+    "item": "ohnomoremeteors:rimerite_nugget"
+  },
+  "experience": 0.0,
+  "cookingtime": 1000000
+}

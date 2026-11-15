@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": {
+    "item": "ohnomoremeteors:raw_cindrite"
+  },
+  "result": "ohnomoremeteors:cindrite_ingot",
+  "experience": 1.0,
+  "cookingtime": 200
+}

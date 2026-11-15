@@ -1,0 +1,21 @@
+# Gradle / build
+.gradle/
+build/
+out/
+bin/
+# Dev runtime (regenerable; the OMM jar in run/mods_raw is a local-only dependency)
+run/
+run-data/
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+# Logs
+logs/
+*.log
+crash-reports/
+# Local agent state - never committed
+.claude/
+/CLAUDE.md
+/AGENTS.md

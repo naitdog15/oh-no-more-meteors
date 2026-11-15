@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:smelting",
+  "category": "misc",
+  "ingredient": {
+    "item": "ohnomoremeteors:raw_rimerite"
+  },
+  "result": "ohnomoremeteors:rimerite_ingot",
+  "experience": 1.0,
+  "cookingtime": 200
+}

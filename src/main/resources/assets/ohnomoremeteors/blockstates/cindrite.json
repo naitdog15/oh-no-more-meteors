@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "heat=0": {
+      "model": "ohnomoremeteors:block/cindrite_heat_0"
+    },
+    "heat=1": {
+      "model": "ohnomoremeteors:block/cindrite_heat_1"
+    },
+    "heat=2": {
+      "model": "ohnomoremeteors:block/cindrite_heat_2"
+    },
+    "heat=3": {
+      "model": "ohnomoremeteors:block/cindrite_heat_3"
+    }
+  }
+}

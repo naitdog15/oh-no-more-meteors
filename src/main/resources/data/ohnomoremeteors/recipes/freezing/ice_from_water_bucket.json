@@ -1,0 +1,11 @@
+{
+  "type": "ohnomoremeteors:freezing",
+  "ingredient": {
+    "item": "minecraft:water_bucket"
+  },
+  "result": {
+    "item": "minecraft:ice"
+  },
+  "experience": 0.1,
+  "cookingtime": 800
+}

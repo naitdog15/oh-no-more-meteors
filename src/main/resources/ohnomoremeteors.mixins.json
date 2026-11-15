@@ -1,0 +1,19 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "refmap": "ohnomoremeteors.refmap.json",
+  "package": "com.temog.notminelegacy.ohnomoremeteors.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "mixins": [
+    "AbstractFurnaceRepairMixin",
+    "MeteorProjectileEntityMixin",
+    "omm.BasicLaserRadiusMixin",
+    "omm.MeteorStructurePickMixin",
+    "omm.MeteorEntityHitMixin",
+    "omm.MeteoricRockQuenchMixin",
+    "omm.MeteoricRockSoundMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

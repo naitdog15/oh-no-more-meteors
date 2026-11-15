@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ohmymeteors:meteoric_alloy"
+    }
+  ],
+  "result": {
+    "item": "ohnomoremeteors:meteoric_alloy_nugget",
+    "count": 9
+  }
+}

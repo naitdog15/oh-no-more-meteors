@@ -1,0 +1,1 @@
+{ "targets": ["ohmymeteors:meteoric_rock"], "properties": {"rock_temperature": "hot"}, "strength": 1.0, "range": 0, "emit_faces": ["up","down","north","south","east","west"] }

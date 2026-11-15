@@ -1,0 +1,1 @@
+{ "targets": ["ohnomoremeteors:cindrite"], "properties": {"heat": "1"}, "strength": 0.4, "range": 0, "emit_faces": ["up","down","north","south","east","west"] }

@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ohnomoremeteors:cindrite_ingot"
+    }
+  ],
+  "result": {
+    "item": "ohnomoremeteors:cindrite_nugget",
+    "count": 9
+  }
+}

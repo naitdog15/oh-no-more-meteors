@@ -1,0 +1,16 @@
+{
+  "variants": {
+    "charge=0": {
+      "model": "ohnomoremeteors:block/veyrite_charge_0"
+    },
+    "charge=1": {
+      "model": "ohnomoremeteors:block/veyrite_charge_1"
+    },
+    "charge=2": {
+      "model": "ohnomoremeteors:block/veyrite_charge_2"
+    },
+    "charge=3": {
+      "model": "ohnomoremeteors:block/veyrite_charge_3"
+    }
+  }
+}

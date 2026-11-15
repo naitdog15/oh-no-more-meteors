@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "#": {
+      "tag": "forge:ingots/rimerite"
+    },
+    "|": {
+      "item": "minecraft:stick"
+    }
+  },
+  "pattern": [
+    "##",
+    "#|",
+    " |"
+  ],
+  "result": {
+    "item": "ohnomoremeteors:rimerite_axe"
+  }
+}

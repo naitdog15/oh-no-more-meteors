@@ -1,0 +1,11 @@
+{
+  "type": "ohnomoremeteors:cindrite_tempering",
+  "ingredient": {
+    "tag": "ohnomoremeteors:cindrite_gear"
+  },
+  "result": {
+    "item": "ohnomoremeteors:cindrite_nugget"
+  },
+  "experience": 0.0,
+  "cookingtime": 1000000
+}

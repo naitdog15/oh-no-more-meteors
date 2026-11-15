@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "front": "ohnomoremeteors:block/frostery_front_on",
+    "side": "ohnomoremeteors:block/frostery_side",
+    "top": "ohnomoremeteors:block/frostery_top"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "type": "ohnomoremeteors:freezing",
+  "ingredient": {
+    "item": "minecraft:lava_bucket"
+  },
+  "result": {
+    "item": "minecraft:obsidian"
+  },
+  "experience": 0.35,
+  "cookingtime": 400
+}
