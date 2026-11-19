@@ -7,5 +7,6 @@
     "item": "minecraft:packed_ice"
   },
   "experience": 0.2,
+  "ingredient_count": 9,
   "cookingtime": 2400
 }

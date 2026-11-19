@@ -90,6 +90,86 @@ public final class ThermalReader {
         return ambient + neighbours;
     }
 
+    // ------------------------------------------------------------------ felt temperature (ambient + neighbours + weather)
+
+    /**
+     * One "felt temperature" reading for a block, in TU, split into its three parts so callers can use the total
+     * (for the band) and the local part (neighbours + weather, for the strong-heat tests). Any part NaN means
+     * the temperature is unknown; callers test {@link #known()} and freeze.
+     */
+    public record Felt(float ambient, float neighbours, float weather) {
+        /** True when the reading is usable. */
+        public boolean known() {
+            return !Float.isNaN(ambient) && !Float.isNaN(neighbours) && !Float.isNaN(weather);
+        }
+
+        /** The temperature the block feels: ambient + neighbours + weather. NaN when unknown. */
+        public float total() {
+            return known() ? ambient + neighbours + weather : Float.NaN;
+        }
+
+        /** Heat from the block's surroundings only (neighbours + weather), without the biome. NaN when unknown. */
+        public float local() {
+            return known() ? neighbours + weather : Float.NaN;
+        }
+    }
+
+    /**
+     * The weather delta in TU for a block: {@code rainDelta} when rain falls on it, {@code snowDelta} when snow
+     * falls on it, otherwise 0. Never any delta in ultra-warm dimensions. Pure arithmetic, no world access.
+     */
+    public static float weatherDelta(boolean rainedOn, boolean snowedOn, boolean ultraWarm) {
+        if (ultraWarm) {
+            return 0.0F;
+        }
+        if (snowedOn) {
+            return Config.SNOW_DELTA.get().floatValue();
+        }
+        if (rainedOn) {
+            return Config.RAIN_DELTA.get().floatValue();
+        }
+        return 0.0F;
+    }
+
+    /** Pure arithmetic of the felt temperature, NaN-safe: any NaN part gives NaN. */
+    public static float feltTemperature(float ambient, float neighbours, float weather) {
+        return new Felt(ambient, neighbours, weather).total();
+    }
+
+    /** The weather delta at {@code pos} (rain or snow falling on the block's top face; see {@link #weatherDelta(boolean, boolean, boolean)}). */
+    public static float weatherDelta(ServerLevel level, BlockPos pos) {
+        boolean ultra = isUltraWarm(level);
+        if (ultra || !level.isRaining()) {
+            return 0.0F;
+        }
+        BlockPos above = pos.above();
+        boolean rain = level.isRainingAt(above);
+        boolean snow = false;
+        // Mirrors Level.isRainingAt, evaluated on the block above: sky access, nothing blocking motion over it, biome precipitation.
+        if (!rain && level.canSeeSky(above)
+                && level.getHeightmapPos(net.minecraft.world.level.levelgen.Heightmap.Types.MOTION_BLOCKING, above).getY() <= above.getY()) {
+            snow = level.getBiome(above).value().getPrecipitationAt(above) == net.minecraft.world.level.biome.Biome.Precipitation.SNOW;
+        }
+        return weatherDelta(rain, snow, false);
+    }
+
+    /**
+     * The felt temperature parts at {@code pos}: NML ambient, the six neighbours (those matching
+     * {@code skipNeighbour} left out) and the weather delta. Server thread only. Unknown parts are NaN
+     * (see {@link Felt#known()}).
+     */
+    public static Felt feltTemperature(ServerLevel level, BlockPos pos, @Nullable Predicate<BlockState> skipNeighbour) {
+        float ambient = ambient(level, pos);
+        if (Float.isNaN(ambient)) {
+            return new Felt(Float.NaN, Float.NaN, Float.NaN);
+        }
+        float neighbours = neighbourHeat(level, pos, skipNeighbour);
+        if (Float.isNaN(neighbours)) {
+            return new Felt(Float.NaN, Float.NaN, Float.NaN);
+        }
+        return new Felt(ambient, neighbours, weatherDelta(level, pos));
+    }
+
     // ------------------------------------------------------------------ the two parts
 
     /**

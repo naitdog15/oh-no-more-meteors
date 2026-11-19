@@ -16,6 +16,7 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import com.google.gson.JsonObject;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.util.GsonHelper;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.SmeltingRecipe;
 import net.minecraft.world.level.Level;
@@ -33,7 +34,8 @@ import net.minecraftforge.registries.RegistryObject;
  * the furnace stops taking fuel once it is fully repaired.
  *
  * How: {@link Recipe} is a furnace recipe that matches only damaged Cindrite gear (item tag
- * ohnomoremeteors:cindrite_gear), so the furnace lights for it. It never finishes cooking (its cook time is huge); the
+ * ohnomoremeteors:cindrite_gear), so the furnace lights for it. It never finishes cooking (the mixin pins its cook progress
+ * to 0 every tick; the cook time is only the short-safe 32767); the
  * repair itself is done in place by mixin.AbstractFurnaceRepairMixin each time a fuel item is used up.
  * With cindriteHeatFuels on, magma blocks, magma cream, blaze powder and fire charges also count as furnace fuel
  * (everywhere, not only for this repair).
@@ -84,13 +86,14 @@ public final class CindriteTempering {
         } else if (stack.is(Items.BLAZE_POWDER)) {
             event.setBurnTime(800);
         } else if (stack.is(Items.FIRE_CHARGE)) {
-            event.setBurnTime(1200);
+            event.setBurnTime(500);
         }
     }
 
     /**
      * Reads the recipe JSON: "ingredient", "result" (an item id; never actually produced), optional "cookingtime"
-     * (default 1000000, so it never finishes) and "experience".
+     * (default 32767, clamped to 2..32767; the recipe never finishes because the mixin pins the cook progress to 0
+     * while repairable gear is in the input) and "experience".
      */
     public static class Serializer implements RecipeSerializer<Recipe> {
 
@@ -99,7 +102,7 @@ public final class CindriteTempering {
             Ingredient ingredient = Ingredient.fromJson(GsonHelper.getAsJsonObject(json, "ingredient"));
             ItemStack result = new ItemStack(ShapedRecipe.itemFromJson(GsonHelper.getAsJsonObject(json, "result")));
             float experience = GsonHelper.getAsFloat(json, "experience", 0.0F);
-            int cookingTime = GsonHelper.getAsInt(json, "cookingtime", 1_000_000);
+            int cookingTime = Mth.clamp(GsonHelper.getAsInt(json, "cookingtime", 32_767), 2, 32_767);
             return new Recipe(id, "", CookingBookCategory.MISC, ingredient, result, experience, cookingTime);
         }
 

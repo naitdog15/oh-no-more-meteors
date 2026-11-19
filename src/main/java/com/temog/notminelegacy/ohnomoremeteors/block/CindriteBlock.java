@@ -3,6 +3,7 @@ package com.temog.notminelegacy.ohnomoremeteors.block;
 import com.temog.notminelegacy.ohnomoremeteors.Config;
 import com.temog.notminelegacy.ohnomoremeteors.OhNoMoreMeteors;
 import com.temog.notminelegacy.ohnomoremeteors.registry.ModBlocks;
+import com.temog.notminelegacy.ohnomoremeteors.registry.ModParticles;
 import com.temog.notminelegacy.ohnomoremeteors.temperature.ThermalReader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -41,16 +42,17 @@ import java.util.function.Predicate;
  *    scheduled tick and loses one heat step, with a hiss and steam. Ice melts into water, and that water then
  *    quenches a still-hot block into obsidian through the tier-1 rule.
  *  - Temperature (pass 2, T4/T5), read through ThermalReader only:
- *      - Next to strong heat (the six neighbours add up to at least cindriteReheatAbove, e.g. lava, fire,
- *        magma) the block does not cool, and may gain one heat step back (up to 3).
- *      - Otherwise it cools one step with cindriteCoolStepChance times the multiplier of its temperature band
+ *      - Next to strong heat (the six neighbours plus the rain/snow delta add up to at least cindriteReheatAbove, e.g. lava, fire,
+ *        magma; the biome temperature is not part of that sum) the block does not cool, and may gain one heat step back (up to 3).
+ *      - Otherwise it cools one step with cindriteCoolStepChance times the multiplier of the band of its felt temperature
+ *        (ambient + neighbour heat + rain/snow delta, see ThermalReader.feltTemperature)
  *        (cold cools faster, warm and hot slower).
  *      - Neighbouring Cindrite is left out of both readings, so a crater does not keep itself hot (see
  *        CONTRACT-PASS2.md 2.1). Other blocks (Rimerite, ice, water) still count.
  *      - In ultra-warm dimensions (the Nether) heat never drops below cindriteNetherMinHeat.
  *      - When the temperature is unknown (NML switched off, wrong thread) the block does not cool or reheat.
  *    When the heat runs out by cooling it becomes cooled Cindrite (heat 0), or, with the config chance,
- *    obsidian instead.
+ *    blackstone instead (water and cold quenches still make obsidian).
  *  - A hot block hurts living entities that walk on it, like a vanilla magma block (not when sneaking, not
  *    fire-immune entities, not with Frost Walker boots).
  *
@@ -102,6 +104,55 @@ public class CindriteBlock extends Block {
         return state.getValue(HEAT) > 0;
     }
 
+    /** Client: a heat 3 block lets off a rising heat spark from its open top face (cosmetic, fails open). */
+    @Override
+    public void attack(BlockState state, Level level, BlockPos pos, net.minecraft.world.entity.player.Player player) {
+        // Like redstone ore: hitting / starting to mine fully hot Cindrite shakes a few sparks loose (client side only).
+        if (level.isClientSide() && state.getValue(HEAT) == MAX_HEAT) {
+            RandomSource r = level.getRandom();
+            for (int i = 0, n = 2 + level.getRandom().nextInt(2); i < n; i++) {
+                level.addParticle(ModParticles.CINDRITE_HEAT_SPARK.get(),
+                        pos.getX() + 0.15D + r.nextDouble() * 0.7D, pos.getY() + 0.6D + r.nextDouble() * 0.5D, pos.getZ() + 0.15D + r.nextDouble() * 0.7D,
+                        0.0D, 0.02D, 0.0D);
+            }
+        }
+        super.attack(state, level, pos, player);
+    }
+
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, net.minecraft.world.entity.player.Player player) {
+        // Breaking fully hot (heat 3) Cindrite throws a burst of hot cinders and sparks, seen by everyone nearby.
+        try {
+            if (level instanceof ServerLevel server && state.getValue(HEAT) == MAX_HEAT
+                    && com.temog.notminelegacy.ohnomoremeteors.meteor.VariantTuning.burstOn(com.temog.notminelegacy.ohnomoremeteors.meteor.MeteorVariant.CINDRITE)) {
+                double x = pos.getX() + 0.5D, y = pos.getY() + 0.5D, z = pos.getZ() + 0.5D;
+                server.sendParticles(ModParticles.CINDRITE_BURST.get(), x, y, z, 8, 0.3D, 0.3D, 0.3D, 0.06D);
+                server.sendParticles(ModParticles.CINDRITE_HEAT_SPARK.get(), x, y + 0.3D, z, 6, 0.35D, 0.2D, 0.35D, 0.03D);
+            }
+        } catch (RuntimeException ex) {
+            // cosmetic only; never block the break
+        }
+        super.playerWillDestroy(level, pos, state, player);
+    }
+
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        try {
+            if (state.getValue(HEAT) < MAX_HEAT || random.nextInt(5) != 0) {
+                return;
+            }
+            BlockPos above = pos.above();
+            if (level.getBlockState(above).isSolidRender(level, above)) {
+                return;
+            }
+            level.addParticle(ModParticles.CINDRITE_HEAT_SPARK.get(),
+                    pos.getX() + random.nextDouble(), pos.getY() + 1.02D, pos.getZ() + random.nextDouble(),
+                    0.0D, 0.02D + random.nextDouble() * 0.03D, 0.0D);
+        } catch (RuntimeException | LinkageError ignored) {
+            // Cosmetic only: never break rendering.
+        }
+    }
+
     // ------------------------------------------------------------------ random tick: quench, reheat, cool
 
     /**
@@ -127,29 +178,25 @@ public class CindriteBlock extends Block {
             return;
         }
 
-        // One temperature reading per tick: the ambient part and the neighbour part, other Cindrite left out.
-        float ambient = ThermalReader.ambient(level, pos);
-        if (Float.isNaN(ambient)) {
-            return; // Temperature unknown: freeze.
-        }
-        float neighbourHeat = ThermalReader.neighbourHeat(level, pos, SAME_KIND);
-        if (Float.isNaN(neighbourHeat)) {
+        // One felt-temperature reading per tick: ambient + neighbour heat (other Cindrite left out) + rain/snow delta.
+        ThermalReader.Felt felt = ThermalReader.feltTemperature(level, pos, SAME_KIND);
+        if (!felt.known()) {
             return; // Temperature unknown: freeze.
         }
 
         int heat = state.getValue(HEAT);
 
-        // T5: strong heat next to the block holds it hot and may heat it back up.
-        if (neighbourHeat >= Config.CINDRITE_REHEAT_ABOVE.get()) {
+        // Strong local heat (neighbours + weather, biome left out) holds the block hot and may heat it back up.
+        // Rain on a block beside fire only trims the sum (2.5 - 0.6), it does not beat it.
+        if (felt.local() >= Config.CINDRITE_REHEAT_ABOVE.get()) {
             if (heat < MAX_HEAT && random.nextDouble() < Config.CINDRITE_REHEAT_CHANCE.get()) {
                 level.setBlockAndUpdate(pos, state.setValue(HEAT, heat + 1));
             }
             return;
         }
 
-        // T4: cooling speed depends on the temperature band the block sits in.
-        float temperature = ambient + neighbourHeat;
-        double chance = Math.min(1.0D, Config.CINDRITE_COOL_STEP_CHANCE.get() * coolMultiplier(ThermalReader.band(temperature)));
+        // Otherwise cooling speed depends on the band of the whole felt temperature.
+        double chance = Math.min(1.0D, Config.CINDRITE_COOL_STEP_CHANCE.get() * coolMultiplier(ThermalReader.band(felt.total())));
         if (random.nextDouble() >= chance) {
             return;
         }
@@ -173,17 +220,26 @@ public class CindriteBlock extends Block {
 
     /**
      * Drops the block one heat step, unless that would take it below the ultra-warm floor.
-     * When {@code mayTurnToObsidian} is true and the heat runs out, the block may set into obsidian instead
-     * (config cindriteCoolToObsidianChance). Returns true when the block changed.
+     * When {@code mayTurnToBlackstone} is true and the heat runs out, the block may set into blackstone instead
+     * (config cindriteCoolToBlackstoneChance). Returns true when the block changed.
      */
-    private static boolean loseHeatStep(BlockState state, ServerLevel level, BlockPos pos, RandomSource random, boolean mayTurnToObsidian) {
+    private static boolean loseHeatStep(BlockState state, ServerLevel level, BlockPos pos, RandomSource random, boolean mayTurnToBlackstone) {
         int newHeat = state.getValue(HEAT) - 1;
         if (newHeat < minHeat(level)) {
             return false;
         }
-        if (newHeat <= 0 && mayTurnToObsidian && random.nextDouble() < Config.CINDRITE_COOL_TO_OBSIDIAN_CHANCE.get()) {
-            // The last of the heat is gone and this one set into glass-hard obsidian.
-            level.setBlockAndUpdate(pos, Blocks.OBSIDIAN.defaultBlockState());
+        if (newHeat <= 0 && mayTurnToBlackstone && random.nextDouble() < Config.CINDRITE_COOL_TO_BLACKSTONE_CHANCE.get()) {
+            // The last of the heat is gone and this one set into dark blackstone.
+            level.setBlockAndUpdate(pos, Blocks.BLACKSTONE.defaultBlockState());
+            // Vanilla lava "fizz" (the lava-meets-water sound) as the last heat dies, with a small smoke wisp.
+            level.playSound(null, pos, SoundEvents.LAVA_EXTINGUISH, SoundSource.BLOCKS, 0.5F,
+                    2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+            // A big smoke plume rising off the top, and puffs rolling out around all sides, so the cool-out is obvious.
+            double cx = pos.getX() + 0.5D, cy = pos.getY() + 0.5D, cz = pos.getZ() + 0.5D;
+            level.sendParticles(ParticleTypes.LARGE_SMOKE, cx, pos.getY() + 1.05D, cz, 14, 0.3D, 0.2D, 0.3D, 0.02D);
+            level.sendParticles(ParticleTypes.CAMPFIRE_COSY_SMOKE, cx, pos.getY() + 1.1D, cz, 2, 0.15D, 0.05D, 0.15D, 0.01D);
+            level.sendParticles(ParticleTypes.POOF, cx, cy, cz, 16, 0.55D, 0.45D, 0.55D, 0.03D);
+            level.sendParticles(ParticleTypes.SMOKE, cx, cy, cz, 20, 0.55D, 0.5D, 0.55D, 0.01D);
             return true;
         }
         level.setBlockAndUpdate(pos, state.setValue(HEAT, newHeat));
@@ -245,10 +301,15 @@ public class CindriteBlock extends Block {
         return true;
     }
 
-    /** True when any of the six neighbours holds water (source, flowing or waterlogged). */
+    /** True when any of the six loaded neighbours holds water (source, flowing or waterlogged). An unloaded neighbour counts as dry. */
     private static boolean touchesWater(Level level, BlockPos pos) {
         for (Direction direction : Direction.values()) {
-            if (level.getFluidState(pos.relative(direction)).is(FluidTags.WATER)) {
+            BlockPos neighbour = pos.relative(direction);
+            // isLoaded never loads a chunk.
+            if (!level.isLoaded(neighbour)) {
+                continue;
+            }
+            if (level.getFluidState(neighbour).is(FluidTags.WATER)) {
                 return true;
             }
         }
@@ -290,7 +351,7 @@ public class CindriteBlock extends Block {
         BlockPos target = cold.get(random.nextInt(cold.size()));
         BlockState melted = meltResult(level.getBlockState(target), level);
 
-        // Cooling from a quench never sets into obsidian by chance: obsidian comes from water only.
+        // Cooling from a quench never sets into blackstone by chance: obsidian comes from water only.
         loseHeatStep(state, level, pos, random, false);
         level.setBlockAndUpdate(target, melted);
         hissAndSteam(level, target);
@@ -339,6 +400,11 @@ public class CindriteBlock extends Block {
                 && !entity.fireImmune()
                 && !EnchantmentHelper.hasFrostWalker(living)) {
             entity.hurt(level.damageSources().hotFloor(), 1.0F);
+        }
+        // Items and other non-living entities resting on full-heat Cindrite catch fire after a while
+        // (living entities are handled every tick by ContactHazards).
+        if (!level.isClientSide && !(entity instanceof LivingEntity) && state.getValue(HEAT) == MAX_HEAT) {
+            ContactHazards.hotContact(entity, level);
         }
         super.stepOn(level, pos, state, entity);
     }

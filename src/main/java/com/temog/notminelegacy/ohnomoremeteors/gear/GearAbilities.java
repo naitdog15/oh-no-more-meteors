@@ -5,6 +5,7 @@ import com.temog.notminelegacy.ohnomoremeteors.Config;
 import com.temog.notminelegacy.ohnomoremeteors.OhNoMoreMeteors;
 import com.temog.notminelegacy.ohnomoremeteors.registry.ModArmorMaterials;
 import com.temog.notminelegacy.ohnomoremeteors.registry.ModTiers;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
@@ -18,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.SwordItem;
 import net.minecraft.world.item.Tier;
 import net.minecraft.world.item.TieredItem;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraftforge.common.loot.IGlobalLootModifier;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -38,8 +40,8 @@ import net.minecraftforge.registries.RegistryObject;
  *    powder snow (item tag minecraft:freeze_immune_wearables).
  * Cindrite ("heat", config cindriteAbilities):
  *  - sword and axe hits set the target on fire (3 s / 2 s).
- *  - full armour set: immune to fire, burning, lava and magma-floor damage, but every 10 seconds spent burning or in
- *    lava costs each armour piece 1 durability.
+ *  - full armour set: immune to fire, burning, lava and magma-floor damage; fire goes out once the wearer leaves
+ *    fire or lava. Each 10 seconds of burning or lava, added up, costs each armour piece 1 durability.
  * Meteoric has no ability: its strength is durability.
  */
 @Mod.EventBusSubscriber(modid = OhNoMoreMeteors.MODID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -52,6 +54,9 @@ public final class GearAbilities {
 
     /** Ticks between the Cindrite armour's heat wear (10 seconds). */
     private static final int HEAT_WEAR_TICKS = 200;
+
+    /** Persistent-data key for the accumulated burning ticks. */
+    private static final String BURN_TICKS_KEY = "ohnomoremeteors:cindrite_burn_ticks";
 
     private static final EquipmentSlot[] ARMOR_SLOTS = {EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET};
 
@@ -121,13 +126,25 @@ public final class GearAbilities {
     @SubscribeEvent
     public static void onLivingTick(LivingEvent.LivingTickEvent event) {
         LivingEntity entity = event.getEntity();
-        if (entity.level().isClientSide() || entity.tickCount % HEAT_WEAR_TICKS != 0
-                || !(entity.isOnFire() || entity.isInLava()) || !Config.CINDRITE_ABILITIES.get()
-                || !fullSet(entity, ModArmorMaterials.CINDRITE)) {
+        if (entity.level().isClientSide()) {
             return;
         }
-        for (EquipmentSlot slot : ARMOR_SLOTS) {
-            entity.getItemBySlot(slot).hurtAndBreak(1, entity, e -> e.broadcastBreakEvent(slot));
+        boolean burning = entity.isOnFire() || entity.isInLava();
+        if (!burning || !Config.CINDRITE_ABILITIES.get() || !fullSet(entity, ModArmorMaterials.CINDRITE)) {
+            return;
+        }
+        int ticks = entity.getPersistentData().getInt(BURN_TICKS_KEY) + 1;
+        if (ticks >= HEAT_WEAR_TICKS) {
+            ticks -= HEAT_WEAR_TICKS;
+            for (EquipmentSlot slot : ARMOR_SLOTS) {
+                entity.getItemBySlot(slot).hurtAndBreak(1, entity, e -> e.broadcastBreakEvent(slot));
+            }
+        }
+        entity.getPersistentData().putInt(BURN_TICKS_KEY, ticks);
+        if (!entity.isInLava()
+                && entity.level().getBlockStatesIfLoaded(entity.getBoundingBox().deflate(1.0E-6D))
+                .noneMatch(s -> s.is(BlockTags.FIRE) || s.is(Blocks.LAVA))) {
+            entity.clearFire();
         }
     }
 }

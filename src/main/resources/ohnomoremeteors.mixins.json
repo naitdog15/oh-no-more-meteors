@@ -7,11 +7,18 @@
   "mixins": [
     "AbstractFurnaceRepairMixin",
     "MeteorProjectileEntityMixin",
+    "NoBurningColdMeteorMixin",
+    "ServerLevelFallParticleMixin",
     "omm.BasicLaserRadiusMixin",
     "omm.MeteorStructurePickMixin",
     "omm.MeteorEntityHitMixin",
     "omm.MeteoricRockQuenchMixin",
-    "omm.MeteoricRockSoundMixin"
+    "omm.MeteoricRockSoundMixin",
+    "omm.MeteorThinTerrainMixin",
+    "omm.MeteorFallParticlesMixin"
+  ],
+  "client": [
+    "client.MeteorRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

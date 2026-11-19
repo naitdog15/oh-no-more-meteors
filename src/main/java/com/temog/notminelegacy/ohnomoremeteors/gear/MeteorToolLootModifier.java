@@ -40,8 +40,9 @@ import java.util.Optional;
  * Rimerite:
  *  - pickaxe: a magma block drops obsidian instead; ice, packed ice and blue ice drop themselves (plain ice still
  *    leaves water behind, as vanilla does without Silk Touch).
- *  - shovel: sand and red sand sometimes drop 1-2 snowballs as well; snow blocks and snow layers drop one extra.
+ *  - shovel: sand and red sand sometimes drop 1-2 snowballs as well; snow layers drop one extra.
  *  - hoe: leaves and grass sometimes drop a snowball.
+ *  - none of the Rimerite drop bonuses apply with Silk Touch.
  * Cindrite (never with Silk Touch):
  *  - pickaxe: ores sometimes come out smelted (raw iron becomes an iron ingot, and so on); coal ores, basalt and tuff
  *    sometimes also drop a fire charge.
@@ -70,7 +71,8 @@ public class MeteorToolLootModifier extends LootModifier {
             return loot;
         }
         if (tiered.getTier() == ModTiers.RIMERITE && Config.RIMERITE_ABILITIES.get()) {
-            return rimerite(loot, state, tool, context.getRandom());
+            boolean silk = EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) > 0;
+            return rimerite(loot, state, tool, context.getRandom(), silk);
         }
         if (tiered.getTier() == ModTiers.CINDRITE && Config.CINDRITE_ABILITIES.get()
                 && EnchantmentHelper.getItemEnchantmentLevel(Enchantments.SILK_TOUCH, tool) == 0) {
@@ -79,18 +81,20 @@ public class MeteorToolLootModifier extends LootModifier {
         return loot;
     }
 
-    private static ObjectArrayList<ItemStack> rimerite(ObjectArrayList<ItemStack> loot, BlockState state, ItemStack tool, RandomSource random) {
+    private static ObjectArrayList<ItemStack> rimerite(ObjectArrayList<ItemStack> loot, BlockState state, ItemStack tool, RandomSource random, boolean silk) {
         if (tool.getItem() instanceof PickaxeItem) {
-            if (state.is(Blocks.MAGMA_BLOCK)) {
+            if (state.is(Blocks.MAGMA_BLOCK) && !silk) {
                 loot.clear();
                 loot.add(new ItemStack(Items.OBSIDIAN));
-            } else if (state.is(BlockTags.ICE) && loot.isEmpty()) {
+            } else if (state.is(BlockTags.ICE) && loot.isEmpty() && state.getBlock().asItem() != Items.AIR) {
                 loot.add(new ItemStack(state.getBlock()));
             }
+        } else if (silk) {
+            return loot;
         } else if (tool.getItem() instanceof ShovelItem) {
             if (state.is(BlockTags.SAND) && random.nextDouble() < Config.RIMERITE_SNOWBALL_CHANCE.get()) {
                 loot.add(new ItemStack(Items.SNOWBALL, 1 + random.nextInt(2)));
-            } else if (state.is(Blocks.SNOW_BLOCK) || state.is(Blocks.SNOW)) {
+            } else if (state.is(Blocks.SNOW)) {
                 loot.add(new ItemStack(Items.SNOWBALL));
             }
         } else if (tool.getItem() instanceof HoeItem) {

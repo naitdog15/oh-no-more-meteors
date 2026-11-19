@@ -47,7 +47,7 @@ public final class ModFrostery {
                     .requiresCorrectToolForDrops()
                     .strength(3.5F)
                     .lightLevel(state -> state.getValue(AbstractFurnaceBlock.LIT) ? 7 : 0)
-                    .sound(SoundType.STONE)));
+                    .sound(ModSounds.FROSTERY_TYPE)));
 
     public static final RegistryObject<Item> FROSTERY_ITEM = ITEMS.register("frostery",
             () -> new BlockItem(FROSTERY.get(), new Item.Properties()));
@@ -63,10 +63,10 @@ public final class ModFrostery {
             () -> RecipeType.simple(OhNoMoreMeteors.id("freezing")));
 
     public static final RegistryObject<RecipeSerializer<FreezingRecipe>> FREEZING_SERIALIZER = SERIALIZERS.register("freezing",
-            () -> new FreezingRecipe.Serializer<>(FreezingRecipe::new, 200));
+            () -> new FreezingRecipe.Serializer<>(FreezingRecipe::new, 200, false));
 
     public static final RegistryObject<RecipeSerializer<FreezingRecipe.Repair>> REPAIR_SERIALIZER = SERIALIZERS.register("rimerite_tempering",
-            () -> new FreezingRecipe.Serializer<>(FreezingRecipe.Repair::new, 1_000_000));
+            () -> new FreezingRecipe.Serializer<>(FreezingRecipe.Repair::new, 32_767, true));
 
     public static void register(IEventBus modBus) {
         BLOCKS.register(modBus);

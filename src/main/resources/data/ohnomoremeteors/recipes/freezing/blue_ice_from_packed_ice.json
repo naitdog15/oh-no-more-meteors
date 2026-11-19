@@ -7,5 +7,6 @@
     "item": "minecraft:blue_ice"
   },
   "experience": 0.35,
+  "ingredient_count": 9,
   "cookingtime": 6400
 }

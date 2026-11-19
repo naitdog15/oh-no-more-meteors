@@ -2,6 +2,7 @@ package com.temog.notminelegacy.ohnomoremeteors.meteor;
 
 import me.emafire003.dev.ohmymeteors.entities.MeteorProjectileEntity;
 import com.temog.notminelegacy.ohnomoremeteors.Config;
+import com.temog.notminelegacy.ohnomoremeteors.registry.ModParticles;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -22,7 +23,7 @@ import java.util.Map;
  * entities. It is only touched on the server thread. Particles are sent per player and only to players
  * within the configured range; a hard per-level-tick budget drops the extras during a meteor shower.
  *
- * Fire: flame, dripping lava, smoke. Ice: snowflakes and white ash.
+ * Fire: ember flakes (custom) and smoke. Ice: rime shards (custom) and white ash. Space: vanilla portal, villager and end rod particles.
  */
 public final class MeteorTrail {
 
@@ -80,6 +81,10 @@ public final class MeteorTrail {
 
     /** Sends one emission for one meteor; returns how many particles it spent from the budget. */
     private static int emit(ServerLevel level, Entity meteor, MeteorVariant variant, double rangeSq, int budget) {
+        if (!VariantTuning.trailOn(variant)) {
+            return 0;
+        }
+        double density = VariantTuning.trailDensity(variant);
         Vec3 motion = meteor.getDeltaMovement();
         double speed = motion.length();
         Vec3 back = speed < 1.0E-2 ? new Vec3(0, 1, 0) : motion.scale(-1.0 / speed);
@@ -90,7 +95,15 @@ public final class MeteorTrail {
         Vec3 base = meteor.position().add(0, meteor.getBbHeight() * 0.5, 0).add(back.scale(along));
 
         int size = meteor instanceof MeteorProjectileEntity m ? m.getSize() : 1;
-        int count = 1 + Math.min(3, size / 5);
+        int baseCount = 1 + Math.min(3, size / 5);
+        int count = VariantTuning.densityCount(baseCount, density);
+        // Shards / portal particles use base + 1, scaled as a whole by density.
+        int countPlus = VariantTuning.densityCount(baseCount + 1, density);
+        // Single-particle sends (lava drip, smoke, ash body) follow the same density; 0 skips them.
+        int one = VariantTuning.densityCount(1, density);
+        if (count <= 0 && countPlus <= 0 && one <= 0) {
+            return 0;
+        }
         double spread = 0.15 + width * 0.2;
 
         List<ServerPlayer> near = new ArrayList<>();
@@ -109,16 +122,15 @@ public final class MeteorTrail {
         int spent = 0;
         // Each send reports its real cost (particles x recipients) and is skipped when the budget cannot cover it.
         if (variant == MeteorVariant.CINDRITE) {
-            spent += send(level, near, far, ParticleTypes.FLAME, base, count, spread, 0.02, budget - spent);
-            spent += send(level, near, far, ParticleTypes.DRIPPING_LAVA, base, 1, spread, 0.0, budget - spent);
-            spent += send(level, near, far, ParticleTypes.LARGE_SMOKE, base.add(back.scale(1.0)), 1, spread, 0.01, budget - spent);
+            spent += send(level, near, far, ModParticles.CINDRITE_EMBER.get(), base, count, spread, 0.02, budget - spent);
+            spent += send(level, near, far, ModParticles.CINDRITE_SMOKE.get(), base.add(back.scale(1.0)), one, spread, 0.01, budget - spent);
         } else if (variant == MeteorVariant.VEYRITE) {
-            spent += send(level, near, far, ParticleTypes.REVERSE_PORTAL, base, count + 1, spread, 0.03, budget - spent);
-            spent += send(level, near, far, ParticleTypes.HAPPY_VILLAGER, base.add(back.scale(0.5)), 1, spread, 0.0, budget - spent);
-            spent += send(level, near, far, ParticleTypes.END_ROD, base.add(back.scale(1.0)), 1, spread, 0.01, budget - spent);
+            spent += send(level, near, far, ModParticles.VEYRITE_SPARK.get(), base, countPlus, spread, 0.03, budget - spent);
+            spent += send(level, near, far, ModParticles.VEYRITE_FLAME.get(), base.add(back.scale(0.5)), one, spread, 0.0, budget - spent);
+            spent += send(level, near, far, ModParticles.VEYRITE_SMOKE.get(), base.add(back.scale(1.0)), one, spread, 0.01, budget - spent);
         } else {
-            spent += send(level, near, far, ParticleTypes.SNOWFLAKE, base, count + 1, spread, 0.03, budget - spent);
-            spent += send(level, near, far, ParticleTypes.WHITE_ASH, base.add(back.scale(1.0)), count, spread, 0.02, budget - spent);
+            spent += send(level, near, far, ModParticles.RIMERITE_SHARD.get(), base, countPlus, spread, 0.03, budget - spent);
+            spent += send(level, near, far, ModParticles.RIMERITE_SMOKE.get(), base.add(back.scale(1.0)), count, spread, 0.02, budget - spent);
         }
         return spent;
     }
@@ -129,6 +141,9 @@ public final class MeteorTrail {
      */
     private static int send(ServerLevel level, List<ServerPlayer> players, List<Boolean> far, ParticleOptions particle,
                             Vec3 pos, int count, double spread, double speed, int budgetLeft) {
+        if (count <= 0) {
+            return 0;
+        }
         int cost = 0;
         for (Boolean isFar : far) {
             cost += isFar ? 1 : count;

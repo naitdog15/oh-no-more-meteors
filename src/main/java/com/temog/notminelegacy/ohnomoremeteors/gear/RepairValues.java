@@ -21,7 +21,7 @@ public final class RepairValues {
             Map.entry(Items.CHARCOAL, 0.02D),
             Map.entry(Items.MAGMA_BLOCK, 0.03D),
             Map.entry(Items.MAGMA_CREAM, 0.04D),
-            Map.entry(Items.FIRE_CHARGE, 0.05D),
+            Map.entry(Items.FIRE_CHARGE, 0.01D),
             Map.entry(Items.BLAZE_POWDER, 0.06D),
             Map.entry(Items.BLAZE_ROD, 0.12D),
             Map.entry(Items.COAL_BLOCK, 0.15D),

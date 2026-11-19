@@ -49,6 +49,14 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> VEYRITE_HIT = register("block.veyrite.hit");
     public static final RegistryObject<SoundEvent> VEYRITE_FALL = register("block.veyrite.fall");
 
+    // ---- Frostery (block set = a very slight variant of Rimerite's; crackle = the soft cold hum while lit) ----
+    public static final RegistryObject<SoundEvent> FROSTERY_CRACKLE = register("block.frostery.crackle");
+    public static final RegistryObject<SoundEvent> FROSTERY_BREAK = register("block.frostery.break");
+    public static final RegistryObject<SoundEvent> FROSTERY_STEP = register("block.frostery.step");
+    public static final RegistryObject<SoundEvent> FROSTERY_PLACE = register("block.frostery.place");
+    public static final RegistryObject<SoundEvent> FROSTERY_HIT = register("block.frostery.hit");
+    public static final RegistryObject<SoundEvent> FROSTERY_FALL = register("block.frostery.fall");
+
     // ---- Distant meteor impact broadcast (meteor/DistantImpactBroadcast) ----
     public static final RegistryObject<SoundEvent> DISTANT_METEOR_FAR = register("distant.meteor.far");
     public static final RegistryObject<SoundEvent> DISTANT_METEOR_VERY_FAR = register("distant.meteor.very_far");
@@ -68,6 +76,9 @@ public final class ModSounds {
 
     public static final SoundType VEYRITE_TYPE = new ForgeSoundType(1.0F, 1.0F,
             VEYRITE_BREAK, VEYRITE_STEP, VEYRITE_PLACE, VEYRITE_HIT, VEYRITE_FALL);
+
+    public static final SoundType FROSTERY_TYPE = new ForgeSoundType(1.0F, 1.0F,
+            FROSTERY_BREAK, FROSTERY_STEP, FROSTERY_PLACE, FROSTERY_HIT, FROSTERY_FALL);
 
     public static final SoundType METEORIC_ROCK_TYPE = new ForgeSoundType(1.0F, 1.0F,
             METEORIC_ROCK_BREAK, METEORIC_ROCK_STEP, METEORIC_ROCK_PLACE, METEORIC_ROCK_HIT, METEORIC_ROCK_FALL);

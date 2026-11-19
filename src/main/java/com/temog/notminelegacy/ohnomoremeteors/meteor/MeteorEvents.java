@@ -4,7 +4,9 @@ import com.temog.notminelegacy.ohnomoremeteors.Config;
 import com.temog.notminelegacy.ohnomoremeteors.OhNoMoreMeteors;
 import com.temog.notminelegacy.ohnomoremeteors.temperature.ThermalReader;
 import me.emafire003.dev.ohmymeteors.entities.MeteorProjectileEntity;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -29,6 +31,11 @@ public final class MeteorEvents {
 
     private static final ResourceLocation METEOR_TYPE_ID = new ResourceLocation("ohmymeteors", "meteor_projectile");
 
+    private static final String BASE_ACCEL_KEY = "ohnomoremeteors:base_accel";
+    private static final String SIZE_SCALED_KEY = "ohnomoremeteors:size_scaled";
+    /** OMM's constructor value for accelerationPower. */
+    private static final double DEFAULT_ACCEL = 0.1D;
+
     private static boolean loggedRollFailure;
     private static boolean loggedTickFailure;
 
@@ -41,6 +48,43 @@ public final class MeteorEvents {
             return false;
         }
         return METEOR_TYPE_ID.equals(ForgeRegistries.ENTITY_TYPES.getKey(entity.getType()));
+    }
+
+    /**
+     * Random size and fall speed (impactFormula.randomizeMeteors). HIGH priority, so it runs before the variant roll:
+     * the roll's minimum-size check sees the changed size, and the variant sizeMult is applied on top of it.
+     * Decided once per meteor (a stored flag), never for scatter children, never for a meteor another add-on has
+     * already claimed, and never for meteors loaded from disk. The speed roll is stored and re-applied on every
+     * load by onJoinTrack, because OMM does not save the meteor's acceleration.
+     */
+    @SubscribeEvent(priority = EventPriority.HIGH)
+    public static void onJoinRandomize(EntityJoinLevelEvent event) {
+        try {
+            if (!(event.getLevel() instanceof ServerLevel level) || event.loadedFromDisk()) {
+                return;
+            }
+            Entity entity = event.getEntity();
+            if (!isOmmMeteor(entity)) {
+                return;
+            }
+            MeteorProjectileEntity meteor = (MeteorProjectileEntity) entity;
+            CompoundTag data = meteor.getPersistentData();
+            if (data.getBoolean(ImpactFormula.RANDOMIZED_KEY) || meteor.isScatterMeteor() || MeteorVariant.hasAnyClaim(entity)) {
+                return;
+            }
+            data.putBoolean(ImpactFormula.RANDOMIZED_KEY, true);
+            if (!Config.RANDOMIZE_METEORS.get()) {
+                return;
+            }
+            RandomSource random = level.getRandom();
+            meteor.setSize(ImpactFormula.jitterSize(meteor.getSize(), random));
+            data.putDouble(ImpactFormula.SPEED_ROLL_KEY, ImpactFormula.rollSpeed(random));
+        } catch (RuntimeException | LinkageError ex) {
+            if (!loggedRollFailure) {
+                loggedRollFailure = true;
+                OhNoMoreMeteors.LOGGER.warn("[ohnomoremeteors] The meteor size/speed randomness failed; the meteor keeps its own.", ex);
+            }
+        }
     }
 
     /**
@@ -78,6 +122,11 @@ public final class MeteorEvents {
             } else if (MeteorVariant.VEYRITE.isEnabled() && random.nextDouble() < MeteorVariant.VEYRITE.chance(band)) {
                 MeteorVariant.VEYRITE.writeTo(entity);
             }
+            MeteorVariant claimed = MeteorVariant.fromEntity(entity);
+            if (claimed != null) {
+                applyClaimSize(meteor, claimed);
+                applySpeed(meteor, claimed);
+            }
         } catch (RuntimeException | LinkageError ex) {
             if (!loggedRollFailure) {
                 loggedRollFailure = true;
@@ -102,10 +151,53 @@ public final class MeteorEvents {
             }
             MeteorVariant variant = MeteorVariant.fromEntity(entity);
             if (variant != null && variant.isEnabled()) {
+                // Re-applied on every join: OMM does not save accelerationPower, so a meteor loaded from disk is back at 0.1.
+                applySpeed((MeteorProjectileEntity) entity, variant);
                 MeteorTrail.track(entity, variant);
+            } else if (entity.getPersistentData().contains(ImpactFormula.SPEED_ROLL_KEY)) {
+                // A plain meteor with a random fall speed (impactFormula.randomizeMeteors).
+                applySpeed((MeteorProjectileEntity) entity, null);
             }
         } catch (RuntimeException | LinkageError ex) {
             warnTickOnce(ex);
+        }
+    }
+
+    /**
+     * Sets OMM's accelerationPower to (base * travelSpeedMult * stored speed roll). {@code variant} may be null for a
+     * plain meteor (multiplier 1.0). The base is the value OMM gave the meteor, stored
+     * the first time so repeated calls (reload, config change) never compound. Clamped 0.01 - 0.5 as a safety net.
+     */
+    static void applySpeed(MeteorProjectileEntity meteor, @javax.annotation.Nullable MeteorVariant variant) {
+        try {
+            CompoundTag data = meteor.getPersistentData();
+            double base;
+            if (data.contains(BASE_ACCEL_KEY)) {
+                base = data.getDouble(BASE_ACCEL_KEY);
+            } else {
+                base = meteor.accelerationPower;
+                if (!(base > 0.0D) || base > 1.0D) {
+                    base = DEFAULT_ACCEL;
+                }
+                data.putDouble(BASE_ACCEL_KEY, base);
+            }
+            meteor.accelerationPower = Mth.clamp(base * VariantTuning.speedMult(variant) * ImpactFormula.speedRoll(meteor), 0.01D, 0.5D);
+        } catch (RuntimeException | LinkageError ex) {
+            warnTickOnce(ex);
+        }
+    }
+
+    /** Scales the size once, right after the claim (never on load, never twice). */
+    static void applyClaimSize(MeteorProjectileEntity meteor, MeteorVariant variant) {
+        CompoundTag data = meteor.getPersistentData();
+        if (data.getBoolean(SIZE_SCALED_KEY)) {
+            return;
+        }
+        data.putBoolean(SIZE_SCALED_KEY, true);
+        int size = meteor.getSize();
+        int scaled = Mth.clamp((int) Math.round(size * VariantTuning.sizeMult(variant)), 1, 50);
+        if (scaled != size) {
+            meteor.setSize(scaled);
         }
     }
 

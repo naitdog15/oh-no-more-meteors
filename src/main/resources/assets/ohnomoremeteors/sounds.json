@@ -16,7 +16,8 @@
       "ohnomoremeteors:block/cindrite/step4",
       "ohnomoremeteors:block/cindrite/step5",
       "ohnomoremeteors:block/cindrite/step6"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.footsteps"
   },
   "block.cindrite.place": {
     "sounds": [
@@ -32,7 +33,8 @@
       "ohnomoremeteors:block/cindrite/hit2",
       "ohnomoremeteors:block/cindrite/hit3",
       "ohnomoremeteors:block/cindrite/hit4"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.hit"
   },
   "block.cindrite.fall": {
     "sounds": [
@@ -57,7 +59,8 @@
       "ohnomoremeteors:block/rimerite/step4",
       "ohnomoremeteors:block/rimerite/step5",
       "ohnomoremeteors:block/rimerite/step6"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.footsteps"
   },
   "block.rimerite.place": {
     "sounds": [
@@ -73,7 +76,8 @@
       "ohnomoremeteors:block/rimerite/hit2",
       "ohnomoremeteors:block/rimerite/hit3",
       "ohnomoremeteors:block/rimerite/hit4"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.hit"
   },
   "block.rimerite.fall": {
     "sounds": [
@@ -98,7 +102,8 @@
       "ohnomoremeteors:block/meteoric_rock/step4",
       "ohnomoremeteors:block/meteoric_rock/step5",
       "ohnomoremeteors:block/meteoric_rock/step6"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.footsteps"
   },
   "block.meteoric_rock.place": {
     "sounds": [
@@ -114,7 +119,8 @@
       "ohnomoremeteors:block/meteoric_rock/hit2",
       "ohnomoremeteors:block/meteoric_rock/hit3",
       "ohnomoremeteors:block/meteoric_rock/hit4"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.hit"
   },
   "block.meteoric_rock.fall": {
     "sounds": [
@@ -241,7 +247,8 @@
       "ohnomoremeteors:block/veyrite/step4",
       "ohnomoremeteors:block/veyrite/step5",
       "ohnomoremeteors:block/veyrite/step6"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.footsteps"
   },
   "block.veyrite.place": {
     "sounds": [
@@ -257,7 +264,8 @@
       "ohnomoremeteors:block/veyrite/hit2",
       "ohnomoremeteors:block/veyrite/hit3",
       "ohnomoremeteors:block/veyrite/hit4"
-    ]
+    ],
+    "subtitle": "subtitles.block.generic.hit"
   },
   "block.veyrite.fall": {
     "sounds": [
@@ -298,5 +306,231 @@
       }
     ],
     "subtitle": "subtitles.ohnomoremeteors.distant.veyrite"
+  },
+  "block.frostery.crackle": {
+    "subtitle": "subtitles.ohnomoremeteors.block.frostery.crackle",
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:block/frostery/ambient/frost_hum_1",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/ambient/frost_hum_2",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/ambient/frost_hum_3",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/ambient/frost_hum_4",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/ambient/frost_hum_5",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/ambient/frost_hum_6",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      }
+    ]
+  },
+  "block.frostery.break": {
+    "subtitle": "subtitles.ohnomoremeteors.block.frostery.break",
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:block/frostery/break_1",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/break_2",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/break_3",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/break_4",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      }
+    ]
+  },
+  "block.frostery.place": {
+    "subtitle": "subtitles.ohnomoremeteors.block.frostery.place",
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:block/frostery/place_1",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/place_2",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/place_3",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/place_4",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      }
+    ]
+  },
+  "block.frostery.step": {
+    "subtitle": "subtitles.ohnomoremeteors.block.frostery.step",
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:block/frostery/step_1",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/step_2",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/step_3",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/step_4",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/step_5",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/step_6",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      }
+    ]
+  },
+  "block.frostery.hit": {
+    "subtitle": "subtitles.ohnomoremeteors.block.frostery.hit",
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:block/frostery/hit_1",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/hit_2",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/hit_3",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/hit_4",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/hit_5",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      }
+    ]
+  },
+  "block.frostery.fall": {
+    "subtitle": "subtitles.ohnomoremeteors.block.frostery.fall",
+    "sounds": [
+      {
+        "name": "ohnomoremeteors:block/frostery/fall_1",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/fall_2",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      },
+      {
+        "name": "ohnomoremeteors:block/frostery/fall_3",
+        "stream": false,
+        "volume": 1.0,
+        "pitch": 1.0,
+        "weight": 1
+      }
+    ]
   }
 }

@@ -147,7 +147,7 @@ public enum MeteorVariant {
     public BlockState craterState() {
         return switch (this) {
             case CINDRITE -> CindriteBlock.hotState();
-            case RIMERITE -> ModBlocks.RIMERITE.get().defaultBlockState();
+            case RIMERITE -> com.temog.notminelegacy.ohnomoremeteors.block.RimeriteBlock.frozenState();
             case VEYRITE -> VeyriteBlock.chargedState();
         };
     }

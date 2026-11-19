@@ -28,6 +28,7 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.RAW_RIMERITE_BLOCK.get());
                         output.accept(ModItems.CINDRITE.get());
                         output.accept(ModItems.RIMERITE.get());
+                        output.accept(ModItems.RIME_WORN_STONE.get());
                         output.accept(ModItems.RAW_VEYRITE.get());
                         output.accept(ModItems.RAW_VEYRITE_BLOCK.get());
                         output.accept(ModItems.VEYRITE.get());

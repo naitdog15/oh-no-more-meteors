@@ -27,18 +27,21 @@ public final class ModItems {
             DeferredRegister.create(ForgeRegistries.ITEMS, OhNoMoreMeteors.MODID);
 
     public static final RegistryObject<Item> RAW_CINDRITE = ITEMS.register("raw_cindrite",
-            () -> new Item(new Item.Properties()));
+            () -> new Item(new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> RAW_RIMERITE = ITEMS.register("raw_rimerite",
             () -> new Item(new Item.Properties()));
     public static final RegistryObject<Item> RAW_VEYRITE = ITEMS.register("raw_veyrite",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> CINDRITE = ITEMS.register("cindrite",
-            () -> new BlockItem(ModBlocks.CINDRITE.get(), new Item.Properties()));
+            () -> new BlockItem(ModBlocks.CINDRITE.get(), new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> RIMERITE = ITEMS.register("rimerite",
             () -> new BlockItem(ModBlocks.RIMERITE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> RIME_WORN_STONE = ITEMS.register("rime_worn_stone",
+            () -> new BlockItem(ModBlocks.RIME_WORN_STONE.get(), new Item.Properties()));
     public static final RegistryObject<Item> RAW_CINDRITE_BLOCK = ITEMS.register("raw_cindrite_block",
-            () -> new BlockItem(ModBlocks.RAW_CINDRITE_BLOCK.get(), new Item.Properties()));
+            () -> new BlockItem(ModBlocks.RAW_CINDRITE_BLOCK.get(), new Item.Properties().fireResistant()));
     public static final RegistryObject<Item> RAW_RIMERITE_BLOCK = ITEMS.register("raw_rimerite_block",
             () -> new BlockItem(ModBlocks.RAW_RIMERITE_BLOCK.get(), new Item.Properties()));
     public static final RegistryObject<Item> VEYRITE = ITEMS.register("veyrite",
@@ -62,7 +65,7 @@ public final class ModItems {
 
     public static final RegistryObject<Item> RIMERITE_SWORD = sword("rimerite", ModTiers.RIMERITE, false);
     public static final RegistryObject<Item> RIMERITE_PICKAXE = pickaxe("rimerite", ModTiers.RIMERITE, false);
-    public static final RegistryObject<Item> RIMERITE_AXE = axe("rimerite", ModTiers.RIMERITE, 7.0F, -3.2F, false);
+    public static final RegistryObject<Item> RIMERITE_AXE = axe("rimerite", ModTiers.RIMERITE, 6.5F, -3.2F, false);
     public static final RegistryObject<Item> RIMERITE_SHOVEL = shovel("rimerite", ModTiers.RIMERITE, false);
     public static final RegistryObject<Item> RIMERITE_HOE = hoe("rimerite", ModTiers.RIMERITE, -1, -2.0F, false);
 

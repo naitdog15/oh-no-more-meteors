@@ -96,4 +96,40 @@ public abstract class MeteorStructurePickMixin {
             OmmFixes.warnOnce("fixSpecialOnlyHang", "The special-only structure pick fix failed; OMM keeps its normal pick.", ex);
         }
     }
+    /**
+     * Plain meteors (PlainMeteorCleanup): never OMM's icy or special (easter egg) structures. If OMM picked one, pick
+     * again among the allowed structures of the same size class and filter; if there is none, OMM's pick stays.
+     */
+    @Inject(
+            method = "getStructureToPlace(Lme/emafire003/dev/ohmymeteors/util/MeteorSizeClass;Ljava/lang/String;)Lnet/minecraft/resources/ResourceLocation;",
+            at = @At("RETURN"),
+            cancellable = true,
+            remap = false,
+            require = 0
+    )
+    private void onmm$plainStructuresOnly(MeteorSizeClass sizeClass, String filter, CallbackInfoReturnable<ResourceLocation> cir) {
+        try {
+            MeteorProjectileEntity self = (MeteorProjectileEntity) (Object) this;
+            ResourceLocation picked = cir.getReturnValue();
+            if (picked == null || !com.temog.notminelegacy.ohnomoremeteors.meteor.PlainMeteorCleanup.applies(self)
+                    || !com.temog.notminelegacy.ohnomoremeteors.meteor.PlainMeteorCleanup.isExcludedStructure(picked)) {
+                return;
+            }
+            String sizeName = sizeClass.getSerializedName();
+            String filterPrefix = (filter != null && !filter.isEmpty()) ? sizeName + "/" + filter : null;
+            List<ResourceLocation> allowed = new java.util.ArrayList<>();
+            for (ResourceLocation id : OhMyMeteors.METEOR_STRUCTURES) {
+                String path = id.getPath();
+                if (path.startsWith(sizeName) && (filterPrefix == null || path.startsWith(filterPrefix))
+                        && !com.temog.notminelegacy.ohnomoremeteors.meteor.PlainMeteorCleanup.isExcludedStructure(id)) {
+                    allowed.add(id);
+                }
+            }
+            if (!allowed.isEmpty()) {
+                cir.setReturnValue(allowed.get(self.level().getRandom().nextInt(allowed.size())));
+            }
+        } catch (RuntimeException ex) {
+            // keep OMM's pick
+        }
+    }
 }

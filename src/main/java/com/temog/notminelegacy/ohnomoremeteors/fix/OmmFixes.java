@@ -75,6 +75,9 @@ public final class OmmFixes {
             if (Config.FIX_STALE_STRUCTURE_LIST.get()) {
                 active.add("fixStaleStructureList");
             }
+            if (Config.FIX_THIN_TERRAIN.get()) {
+                active.add("fixThinTerrain");
+            }
             if (Config.METEORIC_ROCK_WATER_QUENCH.get()) {
                 active.add("meteoricRockWaterQuench");
             }

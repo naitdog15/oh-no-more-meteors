@@ -55,8 +55,10 @@ public class FrosteryBlock extends AbstractFurnaceBlock {
         double x = pos.getX() + 0.5D;
         double y = pos.getY();
         double z = pos.getZ() + 0.5D;
-        if (random.nextDouble() < 0.08D) {
-            level.playLocalSound(x, y, z, SoundEvents.POWDER_SNOW_STEP, SoundSource.BLOCKS, 0.6F, 1.4F + random.nextFloat() * 0.3F, false);
+        // Soft cold hum about every 4-5 s (the takes are 1.2-2.5 s long, so a furnace-like 10% rate would stack them).
+        if (random.nextDouble() < 0.012D) {
+            level.playLocalSound(x, y, z, com.temog.notminelegacy.ohnomoremeteors.registry.ModSounds.FROSTERY_CRACKLE.get(),
+                    SoundSource.BLOCKS, 1.0F, 0.95F + random.nextFloat() * 0.1F, false);
         }
         Direction facing = state.getValue(FACING);
         double side = random.nextDouble() * 0.6D - 0.3D;

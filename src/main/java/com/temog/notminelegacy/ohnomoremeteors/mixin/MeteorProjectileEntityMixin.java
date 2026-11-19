@@ -29,6 +29,10 @@ public abstract class MeteorProjectileEntityMixin {
     @Shadow
     protected boolean exploded;
 
+    /** Plain meteor cleanup: what the impact area held before OMM's own impact (null when not needed). */
+    @org.spongepowered.asm.mixin.Unique
+    private com.temog.notminelegacy.ohnomoremeteors.meteor.PlainMeteorCleanup.Before onmm$plainBefore;
+
     @Inject(method = "explodeMeteor()V", at = @At("HEAD"), cancellable = true, remap = false)
     private void onmm$replaceImpact(CallbackInfo ci) {
         MeteorProjectileEntity self = (MeteorProjectileEntity) (Object) this;
@@ -56,10 +60,23 @@ public abstract class MeteorProjectileEntityMixin {
             this.exploded = true;
             if (MeteorImpact.handle(self)) {
                 ci.cancel();
+            } else {
+                // OMM runs its own impact next: note the area so the plain-meteor cleanup can undo icy / lava / loot blocks.
+                this.onmm$plainBefore = com.temog.notminelegacy.ohnomoremeteors.meteor.PlainMeteorCleanup.capture(self);
             }
         } catch (RuntimeException ex) {
+            this.onmm$plainBefore = null;
             // Never cancel on an error before the impact was taken over: OMM then runs its normal impact.
             OhNoMoreMeteors.LOGGER.warn("[ohnomoremeteors] The meteor impact hook failed; OMM keeps its normal impact.", ex);
+        }
+    }
+    /** After OMM's own impact (blast + structure) of a plain meteor: swap the blocks it may not leave. */
+    @Inject(method = "explodeMeteor()V", at = @At("RETURN"), remap = false)
+    private void onmm$cleanPlainImpact(CallbackInfo ci) {
+        com.temog.notminelegacy.ohnomoremeteors.meteor.PlainMeteorCleanup.Before before = this.onmm$plainBefore;
+        this.onmm$plainBefore = null;
+        if (before != null) {
+            com.temog.notminelegacy.ohnomoremeteors.meteor.PlainMeteorCleanup.apply(before);
         }
     }
 }

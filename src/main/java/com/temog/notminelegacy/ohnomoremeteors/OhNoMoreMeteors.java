@@ -31,6 +31,7 @@ public class OhNoMoreMeteors {
 
         // Sound events first, because the block sound types read them.
         ModSounds.SOUND_EVENTS.register(modBus);
+        com.temog.notminelegacy.ohnomoremeteors.registry.ModParticles.PARTICLES.register(modBus);
         ModBlocks.BLOCKS.register(modBus);
         ModItems.ITEMS.register(modBus);
         ModCreativeTabs.TABS.register(modBus);
@@ -39,6 +40,7 @@ public class OhNoMoreMeteors {
         com.temog.notminelegacy.ohnomoremeteors.gear.CindriteTempering.SERIALIZERS.register(modBus);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        com.temog.notminelegacy.ohnomoremeteors.network.ModNetwork.register();
     }
 
     /** Builds a ResourceLocation in this mod's namespace. */

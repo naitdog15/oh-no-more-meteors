@@ -22,8 +22,14 @@ import java.util.WeakHashMap;
  *
  * The sound is sent to each listener on its own, placed a few blocks from the player toward the impact, so
  * the stereo position and the subtitle arrow point at the crash. Which sound plays depends on the meteor
- * kind (plain, fire, ice) and the distance tier ("far" or, from distantImpactVeryFarDistance on, the
- * softer "very far" rumble). Loudness falls with distance and rises with meteor size.
+ * kind (plain, fire, ice, space) and the distance tier ("far", or the softer "very far" rumble past the
+ * middle of the hearing range).
+ *
+ * Range and loudness come from the impact formula (ImpactFormula, 2026-11-19): a bigger or faster meteor is
+ * heard farther away (distantImpactMinDistance + energy x hearingRangePerEnergy, capped by
+ * distantImpactMaxDistance) and a little louder (loudnessBase + energy x loudnessPerEnergy, capped by
+ * loudnessCap). Loudness then fades with distance. The final volume never goes above 1.0: the sound is placed
+ * a few blocks from the listener, so a higher volume would only widen its attenuation, not help.
  *
  * Scatter meteors never broadcast (one sound per impact). Each player has a cooldown so a shower does not
  * stack crashes. Lasers never call explodeMeteor, so a lasered meteor is silent.
@@ -49,14 +55,18 @@ public final class DistantImpactBroadcast {
         }
         MeteorVariant variant = MeteorVariant.fromEntity(meteor);
         Vec3 impact = meteor.position();
+        ImpactFormula.Impact numbers = ImpactFormula.of(meteor, variant);
         double min = Config.DISTANT_IMPACT_MIN_DISTANCE.get();
-        double veryFar = Config.DISTANT_IMPACT_VERY_FAR_DISTANCE.get();
-        double max = Math.max(min + 1.0D, Config.DISTANT_IMPACT_MAX_DISTANCE.get());
+        // Hearing range from the formula (already capped by distantImpactMaxDistance).
+        double max = Math.max(min + 1.0D, numbers.hearingRange());
+        // The softer rumble takes over halfway out, but never before the configured very-far distance.
+        double veryFar = Mth.clamp(Math.max(min + (max - min) * 0.5D, Math.min(Config.DISTANT_IMPACT_VERY_FAR_DISTANCE.get(), max)), min, max);
         long cooldown = Config.DISTANT_IMPACT_COOLDOWN_TICKS.get();
         long now = level.getGameTime();
-        float sizeGain = Mth.clamp(0.55F + 0.07F * meteor.getSize(), 0.6F, 1.0F);
+        float sizeGain = numbers.loudness();
         float master = Config.DISTANT_IMPACT_VOLUME.get().floatValue();
         Map<UUID, Long> heard = LAST_HEARD.computeIfAbsent(level, l -> new java.util.HashMap<>());
+        heard.values().removeIf(t -> now - t >= cooldown);
 
         for (ServerPlayer player : level.players()) {
             Vec3 ear = player.getEyePosition();
@@ -69,16 +79,16 @@ public final class DistantImpactBroadcast {
             if (last != null && now - last < cooldown) {
                 continue;
             }
-            heard.put(player.getUUID(), now);
 
             boolean isVeryFar = distance >= veryFar;
             SoundEvent sound = pick(variant, isVeryFar);
-            // 1.0 just past the hearing edge, down to 0.45 at the maximum distance.
-            float distanceGain = 1.0F - 0.55F * (float) ((distance - min) / (max - min));
-            float volume = Mth.clamp(master * sizeGain * distanceGain, 0.0F, 1.0F);
+            // 1.0 just past the hearing edge, down to 0.35 at the edge of the meteor's hearing range.
+            float distanceGain = 1.0F - 0.65F * (float) ((distance - min) / (max - min));
+            float volume = Mth.clamp(master * sizeGain * distanceGain, 0.0F, Math.min(1.0F, Config.LOUDNESS_CAP.get().floatValue()));
             if (volume <= 0.01F) {
                 continue;
             }
+            heard.put(player.getUUID(), now);
             Vec3 at = ear.add(offset.scale(PLACE_DISTANCE / distance));
             float pitch = 0.92F + level.random.nextFloat() * 0.12F;
             player.connection.send(new ClientboundSoundPacket(BuiltInRegistries.SOUND_EVENT.wrapAsHolder(sound),

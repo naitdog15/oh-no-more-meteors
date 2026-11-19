@@ -21,15 +21,21 @@ import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.Tags;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
  * The crater of a fire or ice meteor: the blast hollows the ground, then blocks that border the hollow are
  * turned into Cindrite or Rimerite (sparse veins on the walls, a dense floor), plus a rare block now and then.
- * An ice meteor also dusts the hollow with snow and freezes exposed water.
+ * An ice meteor also dusts the hollow with snow and freezes exposed water (in a HOT place it does neither:
+ * no impact snow, and no freezing of exposed water).
  *
  * Use: {@link #capture} BEFORE the explosion, then {@link #build} AFTER it. The "hollow" is every position that
  * was solid in the snapshot and is empty now, so the crater follows what the explosion really removed
@@ -40,7 +46,10 @@ import java.util.Set;
  */
 public final class CraterBuilder {
 
-    /** Block update flags for crater writes: send to clients, skip neighbour shape updates (cheap, no cascades). */
+    /**
+     * Block update flags for crater writes: send to clients, skip neighbour shape updates (cheap, no cascades).
+     * Meltwater and melted-away (air) writes add UPDATE_NEIGHBORS, so water beside the crater re-evaluates and flows.
+     */
     private static final int WRITE_FLAGS = Block.UPDATE_CLIENTS | Block.UPDATE_KNOWN_SHAPE;
 
     /** Blocks at or above this blast resistance (obsidian, reinforced deepslate, anchors...) are never overwritten. */
@@ -51,15 +60,15 @@ public final class CraterBuilder {
 
     /**
      * Land-claim check for crater writes. The blast itself is filtered by claim mods, but crater writes are plain
-     * setBlock calls, so each column is checked here through Oh My, Meteors! own claim check (Flan, YAWP,
-     * OpenPartiesAndClaims). Answers are cached per column for the one impact this object lives for.
+     * setBlock calls, so each position is checked here through Oh My, Meteors! own claim check (Flan, YAWP,
+     * OpenPartiesAndClaims). Answers are cached per position for the one impact this object lives for.
      *
-     * If the claim check itself throws (a broken or mismatched claim mod), the column counts as protected and the
+     * If the claim check itself throws (a broken or mismatched claim mod), the position counts as protected and the
      * crater skips it: an unanswered claim check must never let crater blocks overwrite someone's claim. The
      * failure is logged once per game run.
      */
     private static final class ClaimGuard {
-        /** One warning per game run is enough; afterwards failing columns are skipped quietly. */
+        /** One warning per game run is enough; afterwards failing positions are skipped quietly. */
         private static volatile boolean loggedFailure;
 
         private final ServerLevel level;
@@ -70,17 +79,17 @@ public final class CraterBuilder {
         }
 
         boolean allows(BlockPos pos) {
-            long key = (((long) pos.getX()) << 32) ^ (pos.getZ() & 0xFFFFFFFFL);
+            long key = pos.asLong();
             Boolean cached = columns.get(key);
             if (cached == null) {
                 boolean ok;
                 try {
                     ok = MeteorUtils.canSpawnInModdedRegion(level, pos);
                 } catch (RuntimeException | LinkageError ex) {
-                    ok = false; // fail closed: treat the column as protected
+                    ok = false; // fail closed: treat the position as protected
                     if (!loggedFailure) {
                         loggedFailure = true;
-                        OhNoMoreMeteors.LOGGER.warn("[ohnomoremeteors] The Oh My, Meteors! claim check failed; crater blocks skip the columns it could not check.", ex);
+                        OhNoMoreMeteors.LOGGER.warn("[ohnomoremeteors] The Oh My, Meteors! claim check failed; crater blocks skip the positions it could not check.", ex);
                     }
                 }
                 cached = ok;
@@ -108,11 +117,25 @@ public final class CraterBuilder {
         private int index(int x, int y, int z) {
             return (y * side + z) * side + x;
         }
+
+        /** Edge length of the captured cube (2 x half-width + 1). */
+        public int side() {
+            return side;
+        }
     }
 
     /** Crater half-width in blocks for a meteor size: round(size * spread), capped. 0 means no crater. */
     public static int halfWidth(int meteorSize) {
-        double raw = meteorSize * Config.CRATER_SPREAD_PER_SIZE.get();
+        return halfWidth(meteorSize, 1.0D);
+    }
+
+    /** Crater half-width for a variant: the global spread times the variant's craterHalfWidthMult, same cap. */
+    public static int halfWidth(int meteorSize, MeteorVariant variant) {
+        return halfWidth(meteorSize, VariantTuning.craterMult(variant));
+    }
+
+    private static int halfWidth(int meteorSize, double mult) {
+        double raw = meteorSize * Config.CRATER_SPREAD_PER_SIZE.get() * mult;
         return Mth.clamp((int) Math.round(raw), 0, Config.CRATER_MAX_HALF_WIDTH.get());
     }
 
@@ -158,7 +181,232 @@ public final class CraterBuilder {
         }
     }
 
-    /** Builds the crater (and the ice meteor's aftermath) after the blast. Returns the number of blocks written. */
+    /**
+     * Builds what the meteor leaves in its crater, in the configured impactFormula.craterStyle:
+     * CORE (default) = a compact meteorite lump sized by the impact formula, LINED = the old ore-lined crater.
+     * Returns the number of blocks written.
+     */
+    public static int build(ServerLevel level, Snapshot snap, MeteorVariant variant, ImpactFormula.Impact impact, BlockPos centre) {
+        lastCoreStats = "";
+        if (Config.CRATER_STYLE.get() == Config.CraterStyle.LINED) {
+            return build(level, snap, variant);
+        }
+        return buildCore(level, snap, variant, impact, centre);
+    }
+
+    /** Short description of the last CORE build (blast-hole cells, candidates, chosen), for the impact log. */
+    static String lastCoreStats = "";
+
+    /** Vertical squash of the meteorite lump (a slightly flattened ball). */
+    private static final double LUMP_SQUASH = 0.75D;
+
+    /**
+     * CORE style (2026-11-19, OMM-like): a compact meteorite lump at the bottom of the blast hole, half sunk into the
+     * ground, made of impact.lumpBlocks() blocks, impact.resources() of them ore (the variant's crater block, set
+     * towards the middle), the rest the variant's rock filler with now and then the rare block. Only blasted-out
+     * cells and plain replaceable blocks are used, with the same claim and protection checks as the lined crater.
+     * The Rimerite snow/freeze aftermath still runs. Nothing is built when the blast removed nothing.
+     */
+    private static int buildCore(ServerLevel level, Snapshot snap, MeteorVariant variant, ImpactFormula.Impact impact, BlockPos centre) {
+        if (snap == null) {
+            return 0;
+        }
+        int side = snap.side;
+        boolean[] hollow = findHollow(level, snap);
+        if (hollow == null) {
+            lastCoreStats = "no blast hole";
+            return 0;
+        }
+        RandomSource random = level.getRandom();
+        ClaimGuard claims = new ClaimGuard(level);
+        int cap = Config.CRATER_MAX_BLOCK_WRITES.get();
+
+        // Anchor: the bottom of the blast hole near the impact column (deepest blasted-out cell, preferring cells
+        // close to the column). The impact point itself can be in open air (a meteor that clipped a tree).
+        int cx = Mth.clamp(centre.getX() - snap.min.getX(), 0, side - 1);
+        int cz = Mth.clamp(centre.getZ() - snap.min.getZ(), 0, side - 1);
+        int bestIndex = -1;
+        double bestScore = Double.MAX_VALUE;
+        for (int y = 0; y < side; y++) {
+            for (int z = 0; z < side; z++) {
+                for (int x = 0; x < side; x++) {
+                    if (!hollow[snap.index(x, y, z)]) {
+                        continue;
+                    }
+                    double score = y + 0.5D * Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestIndex = snap.index(x, y, z);
+                    }
+                }
+            }
+        }
+        int bx = bestIndex % side;
+        int bz = (bestIndex / side) % side;
+        int by = bestIndex / (side * side);
+        BlockPos core = new BlockPos(snap.min.getX() + bx, snap.min.getY() + by, snap.min.getZ() + bz);
+
+        int lump = Math.max(1, impact.lumpBlocks());
+        int ore = Math.min(lump, Math.max(1, impact.resources()));
+        double radius = Math.max(0.75D, Math.cbrt(3.0D * lump / (4.0D * Math.PI * LUMP_SQUASH)));
+        // Search wide enough that a lump fits even in a shallow or odd-shaped hole; the nearest cells win anyway.
+        double maxNorm = 2.6D;
+        int reach = (int) Math.ceil(radius * maxNorm) + 1;
+
+        // Candidates: blasted-out cells of the crater and plain replaceable blocks, ranked by distance plus noise.
+        // Each entry: {rank score, ore score, x, y, z}.
+        List<double[]> cells = new ArrayList<>();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int dy = -reach; dy <= reach; dy++) {
+            for (int dz = -reach; dz <= reach; dz++) {
+                for (int dx = -reach; dx <= reach; dx++) {
+                    double vy = dy / LUMP_SQUASH;
+                    double norm = Math.sqrt(dx * dx + vy * vy + dz * dz) / radius;
+                    if (norm > maxNorm) {
+                        continue;
+                    }
+                    pos.set(core.getX() + dx, core.getY() + dy, core.getZ() + dz);
+                    if (level.isOutsideBuildHeight(pos) || !level.hasChunkAt(pos)) {
+                        continue;
+                    }
+                    int x = pos.getX() - snap.min.getX();
+                    int y = pos.getY() - snap.min.getY();
+                    int z = pos.getZ() - snap.min.getZ();
+                    boolean inCube = x >= 0 && y >= 0 && z >= 0 && x < side && y < side && z < side;
+                    BlockState now = level.getBlockState(pos);
+                    boolean blasted = inCube && hollow[snap.index(x, y, z)] && (now.isAir() || now.is(BlockTags.FIRE));
+                    if (!blasted && !canReplace(level, pos, now)) {
+                        continue;
+                    }
+                    cells.add(new double[]{norm + random.nextDouble() * 0.45D, norm + random.nextDouble() * 0.6D,
+                            pos.getX(), pos.getY(), pos.getZ()});
+                }
+            }
+        }
+        cells.sort(Comparator.comparingDouble(c -> c[0]));
+        List<double[]> chosen = new ArrayList<>();
+        int limit = Math.min(lump, cap);
+        for (double[] c : cells) {
+            if (chosen.size() >= limit) {
+                break;
+            }
+            pos.set((int) c[2], (int) c[3], (int) c[4]);
+            if (claims.allows(pos)) {
+                chosen.add(c);
+            }
+        }
+        int holeCells = 0;
+        for (boolean b : hollow) {
+            if (b) holeCells++;
+        }
+        lastCoreStats = "hole " + holeCells + ", core " + core.toShortString() + ", candidates " + cells.size() + ", chosen " + chosen.size();
+        // Ore goes to the cells with the lowest ore score (towards the middle, with some scatter).
+        List<double[]> byOre = new ArrayList<>(chosen);
+        byOre.sort(Comparator.comparingDouble(c -> c[1]));
+        Set<double[]> oreCells = Collections.newSetFromMap(new IdentityHashMap<>());
+        for (int i = 0; i < Math.min(ore, byOre.size()); i++) {
+            oreCells.add(byOre.get(i));
+        }
+
+        // Rimerite in an ultra-warm dimension (the Nether) evaporates: its ore cells are left empty.
+        boolean meltAway = variant == MeteorVariant.RIMERITE && ThermalReader.isUltraWarm(level);
+        int rareOneIn = Config.CRATER_RARE_BLOCK_ONE_IN.get();
+        int fillerRareOneIn = rareOneIn <= 0 ? 0 : Math.max(2, rareOneIn / 4);
+        int writes = 0;
+        for (double[] c : chosen) {
+            pos.set((int) c[2], (int) c[3], (int) c[4]);
+            BlockState placed;
+            if (oreCells.contains(c)) {
+                placed = meltAway ? Blocks.AIR.defaultBlockState() : variant.craterState();
+            } else if (fillerRareOneIn > 0 && random.nextInt(fillerRareOneIn) == 0) {
+                placed = variant.rareState();
+            } else {
+                placed = filler(variant, random);
+            }
+            level.setBlock(pos, placed, placed.isAir() ? WRITE_FLAGS | Block.UPDATE_NEIGHBORS : WRITE_FLAGS);
+            writes++;
+        }
+
+        // Cindrite: now and then a small sealed lava pocket inside the lump (never where it could run out).
+        if (variant == MeteorVariant.CINDRITE && random.nextDouble() < Config.CINDRITE_LAVA_POCKET_CHANCE.get()) {
+            int want = 1 + random.nextInt(Math.max(1, Config.CINDRITE_LAVA_POCKET_MAX.get()));
+            List<double[]> inner = new ArrayList<>(chosen);
+            inner.sort(Comparator.comparingDouble(c -> c[0]));
+            int placed = 0;
+            for (double[] c : inner) {
+                if (placed >= want) {
+                    break;
+                }
+                if (oreCells.contains(c)) {
+                    continue;
+                }
+                pos.set((int) c[2], (int) c[3], (int) c[4]);
+                if (sealedBelowAndSides(level, pos)) {
+                    level.setBlock(pos, Blocks.LAVA.defaultBlockState(), WRITE_FLAGS);
+                    placed++;
+                }
+            }
+            lastCoreStats += ", lava " + placed;
+        }
+
+        if (variant == MeteorVariant.RIMERITE && writes < cap) {
+            boolean snow = snap.climate != ThermalReader.Band.HOT;
+            writes += iceAftermath(level, snap, hollow, random, cap - writes, claims, new HashSet<>(), snow);
+        }
+        return writes;
+    }
+
+    /** True when the blocks below and on all four sides are solid, non-fluid blocks (lava placed here cannot flow out). */
+    private static boolean sealedBelowAndSides(ServerLevel level, BlockPos pos) {
+        for (Direction d : new Direction[]{Direction.DOWN, Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+            BlockPos n = pos.relative(d);
+            if (level.isOutsideBuildHeight(n) || !level.hasChunkAt(n)) {
+                return false;
+            }
+            BlockState st = level.getBlockState(n);
+            if (st.isAir() || !st.getFluidState().isEmpty() || !st.isFaceSturdy(level, n, d.getOpposite())) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /** The rock around the ore in a meteorite lump, per variant. */
+    private static BlockState filler(MeteorVariant variant, RandomSource random) {
+        double r = random.nextDouble();
+        return switch (variant) {
+            case CINDRITE -> (r < 0.55D ? Blocks.BLACKSTONE : r < 0.85D ? Blocks.BASALT : Blocks.SMOOTH_BASALT).defaultBlockState();
+            case RIMERITE -> (r < 0.5D ? Blocks.PACKED_ICE : r < 0.85D ? ModBlocks.RIME_WORN_STONE.get() : Blocks.SNOW_BLOCK).defaultBlockState();
+            case VEYRITE -> (r < 0.45D ? Blocks.COBBLED_DEEPSLATE : r < 0.85D ? Blocks.TUFF : Blocks.AMETHYST_BLOCK).defaultBlockState();
+        };
+    }
+
+    /** Every cube cell that was solid before the blast and is air or fire now; null when there is none. */
+    private static boolean[] findHollow(ServerLevel level, Snapshot snap) {
+        int side = snap.side;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        boolean[] hollow = new boolean[snap.solidBefore.length];
+        boolean any = false;
+        for (int y = 0; y < side; y++) {
+            for (int z = 0; z < side; z++) {
+                for (int x = 0; x < side; x++) {
+                    int i = snap.index(x, y, z);
+                    if (!snap.solidBefore[i]) {
+                        continue;
+                    }
+                    pos.set(snap.min.getX() + x, snap.min.getY() + y, snap.min.getZ() + z);
+                    BlockState now = level.getBlockState(pos);
+                    if (now.isAir() || now.is(BlockTags.FIRE)) {
+                        hollow[i] = true;
+                        any = true;
+                    }
+                }
+            }
+        }
+        return any ? hollow : null;
+    }
+
+    /** LINED style: the old Falling Meteors ore-lined crater (and the ice meteor's aftermath). Returns the number of blocks written. */
     public static int build(ServerLevel level, Snapshot snap, MeteorVariant variant) {
         if (snap == null) {
             return 0;
@@ -200,7 +448,7 @@ public final class CraterBuilder {
         boolean meltHot = variant == MeteorVariant.RIMERITE && snap.climate == ThermalReader.Band.HOT;
         double meltChance = Config.RIMERITE_IMPACT_MELT_HOT.get();
         boolean ultraWarm = ThermalReader.isUltraWarm(level);
-        // Positions written as meltwater, so the ice aftermath does not freeze them straight back.
+        // Positions written as meltwater (the ice aftermath also skips them; it does not freeze at all in a HOT place).
         Set<Long> meltWater = new HashSet<>();
         // Hollow cells from which water could run out of the crater. Only worked out when meltwater can be placed.
         boolean[] leaky = (meltHot && !ultraWarm && meltChance > 0.0D) ? findLeakyHollow(level, snap, hollow) : null;
@@ -242,7 +490,7 @@ public final class CraterBuilder {
                             meltWater.add(pos.asLong());
                         }
                     }
-                    level.setBlock(pos, placed, WRITE_FLAGS);
+                    level.setBlock(pos, placed, (placed.isAir() || placed.is(Blocks.WATER)) ? WRITE_FLAGS | Block.UPDATE_NEIGHBORS : WRITE_FLAGS);
                     if (++writes >= cap) {
                         break outer;
                     }
@@ -441,11 +689,12 @@ public final class CraterBuilder {
     /**
      * Rimerite aftermath: a snow layer on the exposed floor of the hollow (config chance; skipped when
      * {@code laySnow} is false, i.e. in a HOT place), and exposed water source blocks in the cube freeze to ice
-     * (meltwater from a hot-place impact excepted). Returns the number of blocks written.
+     * (meltwater from a hot-place impact excepted). In a HOT place the freezing is skipped entirely, so existing
+     * water there stays water. Returns the number of blocks written.
      */
     private static int iceAftermath(ServerLevel level, Snapshot snap, boolean[] hollow, RandomSource random, int budget, ClaimGuard claims, Set<Long> meltWater, boolean laySnow) {
         int side = snap.side;
-        double snowChance = Config.RIMERITE_IMPACT_SNOW_CHANCE.get();
+        double snowChance = Math.min(1.0D, Config.RIMERITE_IMPACT_SNOW_CHANCE.get() * Config.RIMERITE_V_IMPACT_SNOW_MULT.get());
         BlockState snow = Blocks.SNOW.defaultBlockState();
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         int writes = 0;
@@ -469,8 +718,8 @@ public final class CraterBuilder {
             }
         }
 
-        // Exposed water: a source block with air straight above it.
-        for (int y = 0; y < side && writes < budget; y++) {
+        // Exposed water: a source block with air straight above it. Not in a HOT place (same reason as the snow).
+        for (int y = 0; snap.climate != ThermalReader.Band.HOT && y < side && writes < budget; y++) {
             for (int z = 0; z < side && writes < budget; z++) {
                 for (int x = 0; x < side && writes < budget; x++) {
                     pos.set(snap.min.getX() + x, snap.min.getY() + y, snap.min.getZ() + z);

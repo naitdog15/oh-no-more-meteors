@@ -1,7 +1,8 @@
 {
   "variants": {
-    "": {
-      "model": "ohnomoremeteors:block/rimerite"
-    }
+    "frost=0": { "model": "ohnomoremeteors:block/rimerite_frost_0" },
+    "frost=1": { "model": "ohnomoremeteors:block/rimerite_frost_1" },
+    "frost=2": {"model": "ohnomoremeteors:block/rimerite_frost_2"},
+    "frost=3": { "model": "ohnomoremeteors:block/rimerite" }
   }
 }

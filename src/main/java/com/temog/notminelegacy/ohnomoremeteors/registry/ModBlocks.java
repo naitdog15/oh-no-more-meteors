@@ -5,6 +5,7 @@ import com.temog.notminelegacy.ohnomoremeteors.block.CindriteBlock;
 import com.temog.notminelegacy.ohnomoremeteors.block.RimeriteBlock;
 import com.temog.notminelegacy.ohnomoremeteors.block.VeyriteBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.NoteBlockInstrument;
 import net.minecraft.world.level.material.MapColor;
@@ -47,6 +48,15 @@ public final class ModBlocks {
                     .randomTicks()
                     .friction(0.9F)
                     .sound(ModSounds.RIMERITE_TYPE)));
+
+    /** Plain decorative stone left behind when Rimerite thaws. */
+    public static final RegistryObject<Block> RIME_WORN_STONE = BLOCKS.register("rime_worn_stone", () ->
+            new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.TERRACOTTA_LIGHT_BLUE)
+                    .instrument(NoteBlockInstrument.BASEDRUM)
+                    .strength(1.5F, 6.0F)
+                    .requiresCorrectToolForDrops()
+                    .sound(SoundType.STONE)));
 
     /** Space-meteor crater block. Light and emissive glow follow the charge; pickaxe, iron tier. */
     public static final RegistryObject<Block> VEYRITE = BLOCKS.register("veyrite", () ->

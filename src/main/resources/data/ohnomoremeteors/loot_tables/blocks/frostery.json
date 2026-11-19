@@ -8,7 +8,13 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "ohnomoremeteors:frostery"
+          "name": "ohnomoremeteors:frostery",
+          "functions": [
+            {
+              "function": "minecraft:copy_name",
+              "source": "block_entity"
+            }
+          ]
         }
       ],
       "conditions": [
