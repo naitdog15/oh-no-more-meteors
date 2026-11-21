@@ -21,6 +21,19 @@ public abstract class ServerLevelFallParticleMixin {
             at = @At("HEAD"), argsOnly = true, require = 0)
     private ParticleOptions onmm$variantFallParticle(ParticleOptions original) {
         MeteorVariant variant = MeteorVisuals.ANIMATING.get();
+        // Another mod's look (ForeignVariantLooks), marked beside ANIMATING by MeteorFallParticlesMixin.
+        com.temog.notminelegacy.ohnomoremeteors.meteor.ForeignLook foreign = variant == null ? MeteorVisuals.ANIMATING_FOREIGN.get() : null;
+        if (foreign != null) {
+            try {
+                ParticleOptions swapped = MeteorVisuals.fallParticle(foreign, original);
+                if (swapped != original) {
+                    MeteorVisuals.SWAPPED.incrementAndGet();
+                }
+                return swapped;
+            } catch (RuntimeException ex) {
+                return original;
+            }
+        }
         if (variant == null) {
             return original;
         }

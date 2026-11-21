@@ -18,6 +18,7 @@ import net.minecraftforge.common.ForgeConfigSpec;
  *  - rimerite     : WP-BLOCKS (rimerite block behaviour; the snow/freeze keys also used by WP-METEOR after-crater)
  *  - meteoricRock : WP-BUGS (Oh My, Meteors! meteoric rock water quench mixin), pass 2
  *  - ommFixes     : WP-BUGS (patches for Oh My, Meteors! 1.5.0 bugs), pass 2
+ *  - komitKitty   : meteor.kitty (the Komit Kitty shower)
  *
  * Temperatures are in TU, the Not Mine Legacy thermal unit: a biome-like index where plains are about 0.8,
  * deserts about 2.0 and snowy biomes about 0.0 or below. Block heat sources (lava, fire, magma) are signed
@@ -195,6 +196,83 @@ public final class Config {
     public static final ForgeConfigSpec.BooleanValue FIX_ENTITY_HIT_CLAIM_CHECK;
     public static final ForgeConfigSpec.BooleanValue FIX_STALE_STRUCTURE_LIST;
     public static final ForgeConfigSpec.BooleanValue FIX_THIN_TERRAIN;
+
+    // ---- fluid landings (2026-11-21) ----
+    public static final ForgeConfigSpec.BooleanValue FL_ENABLED;
+    public static final ForgeConfigSpec.DoubleValue FL_WATER_SLOW;
+    public static final ForgeConfigSpec.DoubleValue FL_LAVA_SLOW;
+    public static final ForgeConfigSpec.DoubleValue FL_ICE_SLOW;
+    public static final ForgeConfigSpec.DoubleValue FL_THRESHOLD;
+    public static final ForgeConfigSpec.DoubleValue FL_ICE_SHATTER_SCALE;
+    public static final ForgeConfigSpec.IntValue FL_ICE_MAX_THICKNESS;
+    public static final ForgeConfigSpec.IntValue FL_MAX_SCAN;
+    public static final ForgeConfigSpec.DoubleValue FL_WET_FLUID_RESISTANCE;
+    public static final ForgeConfigSpec.BooleanValue FL_FILL_EXPOSED_FLUID;
+
+    // ---- Komit Kitty shower (2026-11-20) ----
+    public static final ForgeConfigSpec.BooleanValue KITTY_ENABLED;
+    public static final ForgeConfigSpec.DoubleValue KITTY_NATURAL_CHANCE;
+    public static final ForgeConfigSpec.IntValue KITTY_COOLDOWN_TICKS;
+    public static final ForgeConfigSpec.IntValue KITTY_WARNING_TICKS;
+    public static final ForgeConfigSpec.IntValue KITTY_EARLY_WARNING_TICKS;
+    public static final ForgeConfigSpec.BooleanValue KITTY_BROADCAST_SOUNDS;
+    public static final ForgeConfigSpec.DoubleValue KITTY_BROADCAST_VOLUME;
+    public static final ForgeConfigSpec.BooleanValue KITTY_SKY_SHIFT;
+    public static final ForgeConfigSpec.BooleanValue SKY_GLOW_ENABLED;
+    public static final ForgeConfigSpec.BooleanValue SKY_GLOW_REPLACE_OMM;
+    public static final ForgeConfigSpec.DoubleValue SKY_GLOW_STRENGTH;
+    public static final ForgeConfigSpec.ConfigValue<java.util.List<? extends String>> SKY_GLOW_COLOURS;
+
+    // ---- foreignVariants (other mods' meteor variant looks, meteor.ForeignVariantLooks) ----
+    public static final ForgeConfigSpec.BooleanValue FOREIGN_LOOKS_ENABLED;
+
+    // ---- craterExtras (other mods' blocks in the stone crater filler, meteor.CraterExtras) ----
+    public static final ForgeConfigSpec.DoubleValue CRATER_EXTRAS_CINDRITE_CHANCE;
+    public static final ForgeConfigSpec.DoubleValue CRATER_EXTRAS_RIMERITE_CHANCE;
+    public static final ForgeConfigSpec.DoubleValue CRATER_EXTRAS_VEYRITE_CHANCE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_SKY_STRENGTH;
+    public static final ForgeConfigSpec.IntValue KITTY_MESSAGE_RADIUS;
+    public static final ForgeConfigSpec.BooleanValue KITTY_ANNOUNCE_END;
+    public static final ForgeConfigSpec.IntValue KITTY_MIN_COUNT;
+    public static final ForgeConfigSpec.IntValue KITTY_MAX_COUNT;
+    public static final ForgeConfigSpec.IntValue KITTY_DURATION_TICKS;
+    public static final ForgeConfigSpec.IntValue KITTY_MAX_ALIVE;
+    public static final ForgeConfigSpec.IntValue KITTY_MAX_DROPS_PER_TICK;
+    public static final ForgeConfigSpec.IntValue KITTY_SPREAD_RADIUS;
+    public static final ForgeConfigSpec.IntValue KITTY_BASIC_LASER_RADIUS;
+    public static final ForgeConfigSpec.IntValue KITTY_ADVANCED_LASER_RADIUS;
+    public static final ForgeConfigSpec.IntValue KITTY_SIZE_MIN;
+    public static final ForgeConfigSpec.IntValue KITTY_SIZE_MAX;
+    public static final ForgeConfigSpec.DoubleValue KITTY_START_SPEED;
+    public static final ForgeConfigSpec.DoubleValue KITTY_ACCELERATION;
+    public static final ForgeConfigSpec.DoubleValue KITTY_MAX_ENTRY_ANGLE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_BLAST_POWER;
+    public static final ForgeConfigSpec.BooleanValue KITTY_BLAST_FIRE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_BLAST_FIRE_CHANCE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_BLAST_DROP_SHARE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_TUNNEL_BORE_RADIUS;
+    public static final ForgeConfigSpec.BooleanValue KITTY_CAPSULE_OUTER_SHELL;
+    public static final ForgeConfigSpec.DoubleValue KITTY_BLAST_BLOCK_DAMAGE_SCALE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_TUNNEL_BUDGET;
+    public static final ForgeConfigSpec.DoubleValue KITTY_TUNNEL_COST_BASE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_TUNNEL_FLUID_COST;
+    public static final ForgeConfigSpec.IntValue KITTY_TUNNEL_MAX_LENGTH;
+    public static final ForgeConfigSpec.ConfigValue<java.util.List<? extends String>> KITTY_TUNNEL_COST_OVERRIDES;
+    public static final ForgeConfigSpec.BooleanValue KITTY_CAPSULE_ENABLED;
+    public static final ForgeConfigSpec.IntValue KITTY_CAPSULE_MIN_VEYRITE;
+    public static final ForgeConfigSpec.IntValue KITTY_CAPSULE_MAX_VEYRITE;
+    public static final ForgeConfigSpec.DoubleValue KITTY_CAT_CHANCE;
+    public static final ForgeConfigSpec.IntValue KITTY_MAX_CATS_PER_SHOWER;
+    public static final ForgeConfigSpec.IntValue KITTY_CAT_DESPAWN_TICKS;
+    public static final ForgeConfigSpec.IntValue KITTY_CAT_PLAYER_RANGE;
+    public static final ForgeConfigSpec.BooleanValue KITTY_LASERS_ENABLED;
+    public static final ForgeConfigSpec.DoubleValue KITTY_BASIC_LASER_PASS;
+    public static final ForgeConfigSpec.DoubleValue KITTY_ADVANCED_LASER_PASS;
+    public static final ForgeConfigSpec.IntValue KITTY_LASER_MIN_ALTITUDE;
+    public static final ForgeConfigSpec.IntValue KITTY_LASER_REFRESH_TICKS;
+    public static final ForgeConfigSpec.IntValue KITTY_MAX_BEAMS_PER_TICK;
+    public static final ForgeConfigSpec.IntValue KITTY_LASER_SOUND_INTERVAL;
+    public static final ForgeConfigSpec.IntValue KITTY_TRAIL_RANGE;
 
     static {
         ForgeConfigSpec.Builder b = new ForgeConfigSpec.Builder();
@@ -554,6 +632,185 @@ public final class Config {
         FIX_THIN_TERRAIN = b.comment("A meteor that passes through ground thinner than its dig-in depth (superflat, End islands, thin cave roofs) explodes at its first contact point instead of falling into the void.",
                         "Also removes a meteor that never hit anything once it is 64 blocks below the world.")
                 .define("fixThinTerrain", true);
+        b.pop();
+
+        b.comment("Komit Kitty showers: a very rare swarm of small, fast Veyrite-looking meteors that tunnel in and leave kitty capsules. Meteor lasers can shoot them down.")
+                .push("komitKitty");
+        KITTY_ENABLED = b.comment("Allow Komit Kitty showers (natural and the /ohnomoremeteors shower command). Off ends a running shower.")
+                .define("enabled", true);
+        KITTY_NATURAL_CHANCE = b.comment("Chance (0.0 - 1.0) that a natural Oh My, Meteors! meteor becomes a Komit Kitty shower instead. 0 = only the command starts one.")
+                .defineInRange("naturalChance", 0.01D, 0.0D, 1.0D);
+        KITTY_COOLDOWN_TICKS = b.comment("Ticks after a shower ends (per dimension) before another can start naturally (12000 = 10 minutes). Stops meteor bursts chaining showers.")
+                .defineInRange("showerCooldownTicks", 12000, 0, 1728000);
+        KITTY_EARLY_WARNING_TICKS = b.comment("Ticks between the EARLY warning (chat + warning sound, the sky starts to shift) and the first kitty, so players can prepare (8400 = 7 minutes).",
+                        "0 = no early warning, only the final one.")
+                .defineInRange("earlyWarningTicks", 8400, 0, 72000);
+        KITTY_WARNING_TICKS = b.comment("Ticks between the FINAL warning (chat + arrival sound; the sky shift is at full strength from here) and the first kitty (200 = 10 seconds).")
+                .defineInRange("warningTicks", 200, 0, 1200);
+        KITTY_BROADCAST_SOUNDS = b.comment("Players near the shower hear the warning sound at the early warning and a different arrival sound at the final warning, from the shower's direction.")
+                .define("broadcastSounds", true);
+        KITTY_BROADCAST_VOLUME = b.comment("Volume of the warning and arrival sounds (0.0 - 1.0).")
+                .defineInRange("broadcastVolume", 1.0D, 0.0D, 1.0D);
+        KITTY_SKY_SHIFT = b.comment("The sky (and fog) of players near the shower shifts colour gradually from the early warning, is at full strength from the final warning, and fades back when the shower is over.",
+                        "Its colour is the KOMIT_KITTY entry of [skyGlow] colours.")
+                .define("skyShift", true);
+        KITTY_SKY_STRENGTH = b.comment("How far the sky shifts toward the tint at full strength (0 = not at all, 1 = fully). Kept slight by default.")
+                .defineInRange("skyStrength", 0.35D, 0.0D, 1.0D);
+        KITTY_MESSAGE_RADIUS = b.comment("Players within this many blocks (horizontal) of the shower centre get the warning and end messages.")
+                .defineInRange("messageRadius", 256, 16, 4096);
+        KITTY_ANNOUNCE_END = b.comment("Send a short 'the shower is over' chat message with the shot and landed counts.")
+                .define("announceEnd", true);
+        KITTY_MIN_COUNT = b.comment("Fewest kitties in one shower. If higher than maxKitties the two are swapped.")
+                .defineInRange("minKitties", 40, 1, 200);
+        KITTY_MAX_COUNT = b.comment("Most kitties in one shower.")
+                .defineInRange("maxKitties", 70, 1, 200);
+        KITTY_DURATION_TICKS = b.comment("Ticks over which the drops are spread after the warning (400 = 20 seconds).")
+                .defineInRange("durationTicks", 400, 20, 6000);
+        KITTY_MAX_ALIVE = b.comment("Most kitties falling at the same time. A drop held back by this cap waits, nothing is lost.")
+                .defineInRange("maxAlive", 18, 1, 64);
+        KITTY_MAX_DROPS_PER_TICK = b.comment("Most kitties that can be spawned in one tick.")
+                .defineInRange("maxDropsPerTick", 2, 1, 8);
+        KITTY_SPREAD_RADIUS = b.comment("Radius in blocks of the disk the kitties land in, around the shower centre. Falling Meteors used +/-64.")
+                .defineInRange("spreadRadius", 40, 0, 128);
+        KITTY_BASIC_LASER_RADIUS = b.comment("Half-width in blocks of the square a Basic Meteor Laser guards against kitties only. The laser always reaches at least its normal Oh My, Meteors! radius.")
+                .defineInRange("basicLaserKittyRadius", 64, 0, 192);
+        KITTY_ADVANCED_LASER_RADIUS = b.comment("Half-width in blocks of the square an Advanced Meteor Laser guards against kitties only. With 80 and spreadRadius 40, a whole shower centred within 40 blocks of the laser is covered. Never less than the normal radius.")
+                .defineInRange("advancedLaserKittyRadius", 80, 0, 192);
+        KITTY_SIZE_MIN = b.comment("Smallest kitty meteor size (1 - 3). Kitties are always small: sizes above 3 are never used.")
+                .defineInRange("sizeMin", 1, 1, 3);
+        KITTY_SIZE_MAX = b.comment("Largest kitty meteor size (1 - 3).")
+                .defineInRange("sizeMax", 2, 1, 3);
+        KITTY_START_SPEED = b.comment("Speed (blocks per tick) a kitty starts with, pointing at its landing spot.")
+                .defineInRange("startSpeed", 2.0D, 0.5D, 6.0D);
+        KITTY_ACCELERATION = b.comment("Speed a kitty gains every tick (Oh My, Meteors! accelerationPower is normally 0.1, so kitties fall faster).")
+                .defineInRange("acceleration", 0.25D, 0.0D, 0.5D);
+        KITTY_MAX_ENTRY_ANGLE = b.comment("Most degrees a kitty's fall can lean away from straight down.")
+                .defineInRange("maxEntryAngle", 15.0D, 0.0D, 45.0D);
+        KITTY_BLAST_POWER = b.comment("Explosion power of a landing kitty (4.0 = TNT). Entity damage and visuals follow this.")
+                .defineInRange("blastPower", 4.0D, 0.0D, 8.0D);
+        KITTY_BLAST_FIRE = b.comment("A landing kitty can leave a few fires around the blast.")
+                .define("blastFire", true);
+        KITTY_BLAST_FIRE_CHANCE = b.comment("Chance for each blown cell to catch fire (air with solid ground below). Vanilla fire explosions use about 0.33.")
+                .defineInRange("blastFireChance", 0.1D, 0.0D, 1.0D);
+        KITTY_BLAST_DROP_SHARE = b.comment("Share of the item drops a kitty blast would normally leave that are kept (1.0 = all, like TNT with the blockExplosionDropDecay rule).",
+                        "A shower is dozens of blasts; fewer loose items keeps the entity count, and the lag, down. The capsule is the reward.")
+                .defineInRange("blastDropShare", 0.35D, 0.0D, 1.0D);
+        KITTY_BLAST_BLOCK_DAMAGE_SCALE = b.comment("Share of the blocks a plain TNT blast would break that a kitty blast breaks. The blast size and entity damage stay TNT.",
+                        "1.0 = plain TNT, 0.6 = about 60% of the blocks, 0.2 = about 60% of TNT's radius, 0 = no block damage.")
+                .defineInRange("blockDamageScale", 0.6D, 0.0D, 1.0D);
+        KITTY_TUNNEL_BUDGET = b.comment("Hardness budget for the tunnel a kitty digs before it blasts. Each solid block costs its hardness + tunnelCostBase.")
+                .defineInRange("tunnelBudget", 8.8D, 0.0D, 64.0D);
+        KITTY_TUNNEL_COST_BASE = b.comment("Extra cost added to every solid block the tunnel digs, on top of its hardness.")
+                .defineInRange("tunnelCostBase", 0.65D, 0.0D, 10.0D);
+        KITTY_TUNNEL_FLUID_COST = b.comment("Budget a water or lava cell costs the kitty (it slows it a little). The fluid is not removed.")
+                .defineInRange("tunnelFluidCost", 0.5D, 0.0D, 10.0D);
+        KITTY_TUNNEL_BORE_RADIUS = b.comment("Radius of the channel the kitty smashes along its path, around each tunnel block (1.25 = a 3-wide channel without corners, 0 = a 1-block hole).",
+                        "Only blocks the tunnel could dig are broken; the budget is paid for the centre line only.")
+                .defineInRange("tunnelBoreRadius", 1.25D, 0.0D, 2.5D);
+        KITTY_TUNNEL_MAX_LENGTH = b.comment("Most blocks (cells) the tunnel can dig below the surface, whatever the budget.")
+                .defineInRange("tunnelMaxLength", 16, 0, 32);
+        KITTY_TUNNEL_COST_OVERRIDES = b.comment("Hardness the tunnel uses instead of the real one, as 'block_id=value' or '#tag=value'. Default: terracotta counts as 3.0 (deepslate-hard).")
+                .defineListAllowEmpty(java.util.List.of("tunnelCostOverrides"),
+                        () -> java.util.List.of("#minecraft:terracotta=3.0"),
+                        o -> o instanceof String);
+        KITTY_CAPSULE_ENABLED = b.comment("A landed kitty builds a small capsule (one air cell, an inner shell and a Veyrite outer shell) at the end of its tunnel.")
+                .define("capsuleEnabled", true);
+        KITTY_CAPSULE_OUTER_SHELL = b.comment("Wrap the 3x3x3 capsule in a further 5x5x5 layer of Veyrite crater filler (off by default: the capsule is a small 3x3x3 cluster).")
+                .define("capsuleOuterShell", false);
+        KITTY_CAPSULE_MIN_VEYRITE = b.comment("Fewest Veyrite blocks in the capsule's 3x3x3 shell. They go on the 6 cells touching the cat first; those cells are otherwise crying obsidian, the other 20 crying obsidian or tektite.")
+                .defineInRange("capsuleMinVeyrite", 4, 0, 26);
+        KITTY_CAPSULE_MAX_VEYRITE = b.comment("Most Veyrite blocks in the capsule's inner shell.")
+                .defineInRange("capsuleMaxVeyrite", 6, 0, 26);
+        KITTY_CAT_CHANCE = b.comment("Chance that a capsule holds an Oh My, Meteors! Meteor Cat (0 = never, 1 = always). Otherwise the capsule is empty.")
+                .defineInRange("catChance", 0.5D, 0.0D, 1.0D);
+        KITTY_MAX_CATS_PER_SHOWER = b.comment("Most cats one shower can leave.")
+                .defineInRange("maxCatsPerShower", 24, 0, 200);
+        KITTY_CAT_DESPAWN_TICKS = b.comment("An untamed, unnamed capsule cat despawns after this many ticks with no player nearby (12000 = 10 minutes, 0 = never). Tamed cats never despawn.")
+                .defineInRange("catDespawnTicks", 12000, 0, 1728000);
+        KITTY_CAT_PLAYER_RANGE = b.comment("A player within this many blocks keeps a capsule cat from despawning.")
+                .defineInRange("catPlayerRange", 32, 8, 128);
+        KITTY_LASERS_ENABLED = b.comment("Oh My, Meteors! meteor lasers can shoot Komit Kitties down.")
+                .define("lasersStopKitties", true);
+        KITTY_BASIC_LASER_PASS = b.comment("Chance that a kitty landing inside a Basic Meteor Laser's area gets past that laser.",
+                        "Rolled bit by bit as the kitty falls through the laser's band, with a last roll at impact. 0.10 = 10% get through.")
+                .defineInRange("basicLaserPassChance", 0.10D, 0.0D, 1.0D);
+        KITTY_ADVANCED_LASER_PASS = b.comment("Same for the Advanced Meteor Laser. 0.0 = it stops every kitty landing inside its area.")
+                .defineInRange("advancedLaserPassChance", 0.0D, 0.0D, 1.0D);
+        KITTY_LASER_MIN_ALTITUDE = b.comment("A laser only shoots kitties at least this many blocks above itself, so the shots are seen in the sky.")
+                .defineInRange("laserMinAltitude", 16, 0, 64);
+        KITTY_LASER_REFRESH_TICKS = b.comment("Ticks between looks for lasers in the loaded chunks around a shower (100 = 5 seconds).")
+                .defineInRange("laserRefreshTicks", 100, 20, 1200);
+        KITTY_MAX_BEAMS_PER_TICK = b.comment("Most laser beams drawn per tick. More shots still pop, they just skip the beam.")
+                .defineInRange("maxBeamsPerTick", 4, 0, 32);
+        KITTY_LASER_SOUND_INTERVAL = b.comment("A laser plays its shot sound at most once per this many ticks.")
+                .defineInRange("laserSoundIntervalTicks", 4, 1, 40);
+        KITTY_TRAIL_RANGE = b.comment("Only players within this many blocks see a kitty's trail and laser shots.")
+                .defineInRange("trailRange", 160, 16, 512);
+        b.pop();
+
+        b.comment("The add-on's own sky glow: falling meteors tint the sky by their look, and the Komit Kitty omen shifts it before a shower.",
+                        "It replaces Oh My, Meteors!' skyglow, which flashes much harder.")
+                .push("skyGlow");
+        SKY_GLOW_ENABLED = b.comment("Falling meteors near you tint the sky in their own colour.")
+                .define("enabled", true);
+        SKY_GLOW_REPLACE_OMM = b.comment("Switch Oh My, Meteors!' own skyglow off while this one is on (in memory only; its config file is not changed).")
+                .define("replaceOmmSkyGlow", true);
+        SKY_GLOW_STRENGTH = b.comment("Peak strength of a meteor's glow, right under it (0 - 1). It falls off smoothly with distance.")
+                .defineInRange("strength", 0.3D, 0.0D, 1.0D);
+        SKY_GLOW_COLOURS = b.comment("Glow colour per kind, as 'KIND=#RRGGBB'. Kinds: PLAIN, CINDRITE, RIMERITE, VEYRITE, KOMIT_KITTY.")
+                .defineListAllowEmpty(java.util.List.of("colours"),
+                        () -> java.util.List.of("PLAIN=#E8A04A", "CINDRITE=#D9502E", "RIMERITE=#8CC4EE", "VEYRITE=#3CC8A0", "KOMIT_KITTY=#4A3F66"),
+                        o -> o instanceof String);
+        b.pop();
+
+        b.comment("Other mods' meteor variants: a mod that claims Oh My, Meteors! meteors can register its own look",
+                        "(body texture, fall particles, trail, sky glow, distant sound) for this mod to draw.")
+                .push("foreignVariants");
+        FOREIGN_LOOKS_ENABLED = b.comment("Show the looks other mods register for their meteors. Off = their meteors look plain.",
+                        "Their fall speed stays theirs either way.")
+                .define("showLooks", true);
+        b.pop();
+
+        b.comment("Other mods' blocks in the crater filler: a mod can add blocks to the tags ohnomoremeteors:crater_extras/<variant>",
+                        "(shipped empty). Only stone fillers (blackstone, basalt, smooth basalt, rime-worn stone, tektite, deepslate, cobbled deepslate, tuff)",
+                        "are replaced, never ice, snow or crying obsidian. With an empty tag nothing changes.")
+                .push("craterExtras");
+        CRATER_EXTRAS_CINDRITE_CHANCE = b.comment("Chance that a Cindrite crater's stone filler block becomes a crater_extras/cindrite block.")
+                .defineInRange("cindriteChance", 0.08D, 0.0D, 1.0D);
+        CRATER_EXTRAS_RIMERITE_CHANCE = b.comment("Chance that a Rimerite crater's stone filler block becomes a crater_extras/rimerite block.")
+                .defineInRange("rimeriteChance", 0.08D, 0.0D, 1.0D);
+        CRATER_EXTRAS_VEYRITE_CHANCE = b.comment("Chance that a Veyrite crater's (or Komit Kitty capsule's) stone filler block becomes a crater_extras/veyrite block.")
+                .defineInRange("veyriteChance", 0.08D, 0.0D, 1.0D);
+        b.pop();
+
+        b.comment("What happens when a fire, ice or space meteor (or a Building Bridges Sky Stone meteor) lands in water or lava, or on ice over them.",
+                        "The meteor shatters an ice disc as big as itself and keeps falling; the water, lava and ice it passes through slow it.",
+                        "A meteor slowed below destructionThreshold does no destruction and only settles its cluster on the floor.")
+                .push("fluidLandings");
+        FL_ENABLED = b.comment("Master switch. Off = the old behaviour (a submerged impact is left to Oh My, Meteors!).")
+                .define("enabled", true);
+        FL_WATER_SLOW = b.comment("Speed lost per block of water the meteor falls through (a meteor starts at about 0.84 - 1.22).",
+                        "Default: an average meteor stops doing destruction after about 24 blocks of open water (user ruling 2026-11-21).")
+                .defineInRange("waterSlowPerBlock", 0.027D, 0.0D, 1.0D);
+        FL_LAVA_SLOW = b.comment("Speed lost per block of lava the meteor falls through (same as water by default: lava behaves like water).")
+                .defineInRange("lavaSlowPerBlock", 0.027D, 0.0D, 1.0D);
+        FL_ICE_SLOW = b.comment("Speed lost per layer of ice the meteor shatters on the way down.",
+                        "Default: under a one-layer ice cover an average meteor stops doing destruction after about 16 blocks of water.")
+                .defineInRange("iceSlowPerLayer", 0.23D, 0.0D, 1.0D);
+        FL_THRESHOLD = b.comment("Speed left at the floor below which the meteor does no destruction at all (it only places its cluster).",
+                        "At or above it the meteor makes a blast at the floor, weaker the slower it is.")
+                .defineInRange("destructionThreshold", 0.35D, 0.0D, 2.0D);
+        FL_ICE_SHATTER_SCALE = b.comment("Radius of the shattered ice disc = meteor size / 2 times this.")
+                .defineInRange("iceShatterRadiusScale", 1.0D, 0.25D, 4.0D);
+        FL_ICE_MAX_THICKNESS = b.comment("Most ice layers shattered above or below the entry layer (a thicker ice sheet over water is left to the normal impact).")
+                .defineInRange("iceMaxThickness", 6, 1, 16);
+        FL_MAX_SCAN = b.comment("Most blocks scanned up or down a fluid column when working out a landing.")
+                .defineInRange("maxScan", 64, 8, 256);
+        FL_WET_FLUID_RESISTANCE = b.comment("Blast resistance of water and lava cells in a wet blast (0 = the blast reaches the floor through the fluid). The fluid itself is never removed.")
+                .defineInRange("wetFluidResistance", 0.0D, 0.0D, 100.0D);
+        FL_FILL_EXPOSED_FLUID = b.comment("A crater whose blast hole opens onto water or lava (a lake edge, a lava crust) also fills those fluid cells with its cluster, so the cluster keeps its shape.",
+                        "This is the one setting that also changes some dry-land craters.")
+                .define("fillExposedFluid", true);
         b.pop();
 
         SPEC = b.build();

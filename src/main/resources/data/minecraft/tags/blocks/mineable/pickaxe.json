@@ -8,6 +8,20 @@
     "ohnomoremeteors:raw_rimerite_block",
     "ohnomoremeteors:veyrite",
     "ohnomoremeteors:raw_veyrite_block",
-    "ohnomoremeteors:frostery"
+    "ohnomoremeteors:frostery",
+    "ohnomoremeteors:tektite",
+    "ohnomoremeteors:polished_tektite",
+    "ohnomoremeteors:tektite_bricks",
+    "ohnomoremeteors:cracked_tektite_bricks",
+    "ohnomoremeteors:chiseled_tektite",
+    "ohnomoremeteors:tektite_stairs",
+    "ohnomoremeteors:tektite_slab",
+    "ohnomoremeteors:tektite_wall",
+    "ohnomoremeteors:polished_tektite_stairs",
+    "ohnomoremeteors:polished_tektite_slab",
+    "ohnomoremeteors:polished_tektite_wall",
+    "ohnomoremeteors:tektite_brick_stairs",
+    "ohnomoremeteors:tektite_brick_slab",
+    "ohnomoremeteors:tektite_brick_wall"
   ]
 }

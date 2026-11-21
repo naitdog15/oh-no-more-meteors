@@ -1,10 +1,12 @@
 package com.temog.notminelegacy.ohnomoremeteors.meteor;
 
 import com.temog.notminelegacy.ohnomoremeteors.OhNoMoreMeteors;
+import com.temog.notminelegacy.ohnomoremeteors.meteor.kitty.KomitKitty;
 import com.temog.notminelegacy.ohnomoremeteors.registry.ModParticles;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.entity.Entity;
 
 import javax.annotation.Nullable;
 
@@ -19,8 +21,69 @@ public final class MeteorVisuals {
     public static final ThreadLocal<MeteorVariant> ANIMATING = new ThreadLocal<>();
     /** How many OMM fall particles have been swapped since start (a check that the swap is live; read by tests). */
     public static final java.util.concurrent.atomic.AtomicLong SWAPPED = new java.util.concurrent.atomic.AtomicLong();
+    /**
+     * The other mod's look whose OMM fall animation is running on this thread (set by MeteorFallParticlesMixin beside
+     * {@link #ANIMATING}, only when that is empty), else empty. See {@link ForeignVariantLooks}.
+     */
+    public static final ThreadLocal<ForeignLook> ANIMATING_FOREIGN = new ThreadLocal<>();
 
     private MeteorVisuals() {
+    }
+
+    /**
+     * The variant a meteor LOOKS like: its real variant, or Veyrite for a Komit Kitty (kitties are small Veyrite-looking
+     * meteors but stay a separate claim for gameplay). Null for a plain meteor.
+     *
+     * Use this ONLY for looks (body texture, particles, the burning overlay, what the client is told). Gameplay keeps
+     * {@link MeteorVariant#fromEntity}, which is null for a kitty, so no variant rule ever applies to it.
+     */
+    @Nullable
+    public static MeteorVariant lookOf(Entity entity) {
+        MeteorVariant variant = MeteorVariant.fromEntity(entity);
+        if (variant != null) {
+            return variant;
+        }
+        return KomitKitty.isKitty(entity) ? MeteorVariant.VEYRITE : null;
+    }
+
+    /**
+     * The other mod's look a meteor shows (2026-11-21), or null. Always null when {@link #lookOf} is not null, so this
+     * mod's variants and the Komit Kitty keep their own looks; null for unregistered claims too. Both sides.
+     */
+    @Nullable
+    public static ForeignLook foreignLookOf(Entity entity) {
+        if (lookOf(entity) != null) {
+            return null;
+        }
+        return ForeignVariantLooks.lookOf(entity);
+    }
+
+    /** The other mod's look of a meteor body texture, in OMM's current state (OMM's own texture when the look has none). */
+    public static ResourceLocation bodyTexture(ForeignLook look, ResourceLocation ommTexture) {
+        return look.bodyTexture(ommTexture);
+    }
+
+    /**
+     * Server side, other mod's look: the same swap as {@link #fallParticle(MeteorVariant, ParticleOptions)}. OMM's big
+     * meteor smoke, smoke, large smoke and campfire smoke become the look's smoke, flame its flame, lava its spark.
+     * A part the look has no particle for keeps OMM's own.
+     */
+    public static ParticleOptions fallParticle(@Nullable ForeignLook look, ParticleOptions original) {
+        if (look == null) {
+            return original;
+        }
+        var type = original.getType();
+        if (original instanceof me.emafire003.dev.ohmymeteors.particles.meteor_smoke.MeteorSmokeScaledOptions
+                || type == ParticleTypes.SMOKE || type == ParticleTypes.CAMPFIRE_COSY_SMOKE || type == ParticleTypes.LARGE_SMOKE) {
+            return ForeignLook.or(look.smoke(), original);
+        }
+        if (type == ParticleTypes.FLAME) {
+            return ForeignLook.or(look.flame(), original);
+        }
+        if (type == ParticleTypes.LAVA) {
+            return ForeignLook.or(look.spark(), original);
+        }
+        return original;
     }
 
     /**

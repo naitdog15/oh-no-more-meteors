@@ -15,10 +15,13 @@
     "omm.MeteoricRockQuenchMixin",
     "omm.MeteoricRockSoundMixin",
     "omm.MeteorThinTerrainMixin",
-    "omm.MeteorFallParticlesMixin"
+    "omm.MeteorFallParticlesMixin",
+    "omm.BasicLaserIgnoresKittyMixin",
+    "omm.AdvancedLaserIgnoresKittyMixin"
   ],
   "client": [
-    "client.MeteorRendererMixin"
+    "client.MeteorRendererMixin",
+    "client.ClientLevelSkyMixin"
   ],
   "injectors": {
     "defaultRequire": 1

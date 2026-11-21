@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "ohnomoremeteors:polished_tektite"
+  },
+  "result": "ohnomoremeteors:polished_tektite_stairs",
+  "count": 1
+}

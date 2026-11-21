@@ -65,6 +65,9 @@ public final class ModSounds {
     public static final RegistryObject<SoundEvent> DISTANT_RIMERITE_FAR = register("distant.rimerite.far");
     public static final RegistryObject<SoundEvent> DISTANT_RIMERITE_VERY_FAR = register("distant.rimerite.very_far");
     public static final RegistryObject<SoundEvent> DISTANT_VEYRITE_FAR = register("distant.veyrite.far");
+    // ---- Komit Kitty shower broadcasts (2026-11-21). PLACEHOLDER takes: vanilla bell resonance and the Veyrite distant crash.
+    public static final RegistryObject<SoundEvent> KOMIT_KITTY_WARNING = register("komit_kitty.warning");
+    public static final RegistryObject<SoundEvent> KOMIT_KITTY_ARRIVAL = register("komit_kitty.arrival");
     public static final RegistryObject<SoundEvent> DISTANT_VEYRITE_VERY_FAR = register("distant.veyrite.very_far");
 
     // ---- Sound types handed to BlockBehaviour.Properties#sound ----

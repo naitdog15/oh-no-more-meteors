@@ -8,6 +8,9 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.temog.notminelegacy.ohnomoremeteors.Config;
 import com.temog.notminelegacy.ohnomoremeteors.OhNoMoreMeteors;
+import com.temog.notminelegacy.ohnomoremeteors.meteor.kitty.KittyShower;
+import com.temog.notminelegacy.ohnomoremeteors.meteor.kitty.KittyShowerParams;
+import com.temog.notminelegacy.ohnomoremeteors.meteor.kitty.KittyShowers;
 import me.emafire003.dev.ohmymeteors.entities.MeteorProjectileEntity;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -33,6 +36,7 @@ import javax.annotation.Nullable;
  * Test command for summoning meteors of a chosen variant (operator level 2):
  * <pre>
  *   /ohnomoremeteors meteor &lt;cindrite|rimerite|veyrite|plain|random&gt; [size] [height] [pos] [angle] [north|east|south|west|random]
+ *   /ohnomoremeteors shower kitty [pos [count [soon|now]]]   or   /ohnomoremeteors shower stop   (Komit Kitty shower, see meteor.kitty)
  * Without a size the meteor gets a random size (impactFormula.randomizeMeteors) or the default size 8.
  * </pre>
  * The meteor is a normal Oh My, Meteors! meteor, spawned {@code height} blocks above {@code pos} (default: the
@@ -86,7 +90,83 @@ public final class MeteorCommand {
         }
         dispatcher.register(Commands.literal(OhNoMoreMeteors.MODID)
                 .requires(s -> s.hasPermission(2))
-                .then(meteor));
+                .then(meteor)
+                .then(showerLiteral()));
+    }
+
+    /**
+     * The shower sub-commands: {@code shower kitty [pos [count [soon|now]]]} starts a Komit Kitty shower (count 1..200
+     * overrides the configured min/max). Without a flag it has the full early warning (earlyWarningTicks); a number
+     * after the count is a custom lead in ticks (the early warning then comes that long before the first kitty); {@code soon}
+     * skips the early warning and keeps only the final one (warningTicks: chat, sound, sky shift); {@code now} drops all
+     * warnings. {@code shower stop} ends this level's shower.
+     * The command ignores naturalChance and the cooldown, but respects the config switch and the one-shower-per-level rule.
+     */
+    private static LiteralArgumentBuilder<CommandSourceStack> showerLiteral() {
+        return Commands.literal("shower")
+                .then(Commands.literal("kitty")
+                        .executes(c -> runKittyShower(c, null, null, LEAD_FULL))
+                        .then(Commands.argument("pos", BlockPosArgument.blockPos())
+                                .executes(c -> runKittyShower(c, BlockPosArgument.getLoadedBlockPos(c, "pos"), null, LEAD_FULL))
+                                .then(Commands.argument("count", IntegerArgumentType.integer(1, 200))
+                                        .executes(c -> runKittyShower(c, BlockPosArgument.getLoadedBlockPos(c, "pos"),
+                                                IntegerArgumentType.getInteger(c, "count"), LEAD_FULL))
+                                        .then(Commands.argument("leadTicks", IntegerArgumentType.integer(0, 72000))
+                                                .executes(c -> runKittyShower(c, BlockPosArgument.getLoadedBlockPos(c, "pos"),
+                                                        IntegerArgumentType.getInteger(c, "count"), LEAD_CUSTOM + IntegerArgumentType.getInteger(c, "leadTicks"))))
+                                        .then(Commands.literal("soon")
+                                                .executes(c -> runKittyShower(c, BlockPosArgument.getLoadedBlockPos(c, "pos"),
+                                                        IntegerArgumentType.getInteger(c, "count"), LEAD_SOON)))
+                                        .then(Commands.literal("now")
+                                                .executes(c -> runKittyShower(c, BlockPosArgument.getLoadedBlockPos(c, "pos"),
+                                                        IntegerArgumentType.getInteger(c, "count"), LEAD_NOW))))))
+                .then(Commands.literal("stop")
+                        .executes(MeteorCommand::runShowerStop));
+    }
+
+    private static final int LEAD_FULL = 0;
+    private static final int LEAD_SOON = 1;
+    private static final int LEAD_NOW = 2;
+    /** leadMode at or above this = a custom lead of (leadMode - LEAD_CUSTOM) ticks. */
+    private static final int LEAD_CUSTOM = 1000;
+
+    private static int runKittyShower(CommandContext<CommandSourceStack> c, @Nullable BlockPos pos, @Nullable Integer count, int leadMode) {
+        CommandSourceStack source = c.getSource();
+        ServerLevel level = source.getLevel();
+        if (!Config.KITTY_ENABLED.get()) {
+            source.sendFailure(Component.translatable("commands.ohnomoremeteors.shower.disabled"));
+            return 0;
+        }
+        if (KittyShowers.active(level) != null) {
+            source.sendFailure(Component.translatable("commands.ohnomoremeteors.shower.busy"));
+            return 0;
+        }
+        Vec3 centre = pos != null ? Vec3.atBottomCenterOf(pos) : source.getPosition();
+        KittyShowerParams base = KittyShowerParams.fromConfig(level.getRandom());
+        int finalWarning = base.finalWarningTicks();
+        int lead = leadMode >= LEAD_CUSTOM ? leadMode - LEAD_CUSTOM
+                : leadMode == LEAD_NOW ? 0 : leadMode == LEAD_SOON ? finalWarning : base.warningTicks();
+        KittyShowerParams params = new KittyShowerParams(count != null ? count : base.count(),
+                base.warningTicks(), base.durationTicks(), base.spreadRadius(), base.maxEntryAngle(), finalWarning)
+                .withLead(lead, finalWarning);
+        KittyShower shower = KittyShowers.start(level, centre.x, centre.z, params);
+        if (shower == null) {
+            source.sendFailure(Component.translatable("commands.ohnomoremeteors.shower.busy"));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.translatable("commands.ohnomoremeteors.shower.started",
+                params.count(), (int) centre.x, (int) centre.z, params.warningTicks()), true);
+        return 1;
+    }
+
+    private static int runShowerStop(CommandContext<CommandSourceStack> c) {
+        CommandSourceStack source = c.getSource();
+        if (KittyShowers.stop(source.getLevel())) {
+            source.sendSuccess(() -> Component.translatable("commands.ohnomoremeteors.shower.stopped"), true);
+            return 1;
+        }
+        source.sendFailure(Component.translatable("commands.ohnomoremeteors.shower.none"));
+        return 0;
     }
 
     /** [angle] then an optional travel direction: north / east / south / west (fixed) or random (the default). */

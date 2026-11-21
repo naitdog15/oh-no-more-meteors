@@ -154,6 +154,13 @@ public final class MeteorEvents {
                 // Re-applied on every join: OMM does not save accelerationPower, so a meteor loaded from disk is back at 0.1.
                 applySpeed((MeteorProjectileEntity) entity, variant);
                 MeteorTrail.track(entity, variant);
+            } else if (variant == null && ForeignVariantLooks.isRegisteredClaim(entity)) {
+                // Another mod's registered variant: that mod owns its fall speed (applySpeed skips it), and its look's
+                // trail runs through the same trail tick and budget as ours. Disk loads come through here too.
+                ForeignLook look = MeteorVisuals.foreignLookOf(entity);
+                if (look != null) {
+                    MeteorTrail.trackForeign(entity, look);
+                }
             } else if (entity.getPersistentData().contains(ImpactFormula.SPEED_ROLL_KEY)) {
                 // A plain meteor with a random fall speed (impactFormula.randomizeMeteors).
                 applySpeed((MeteorProjectileEntity) entity, null);
@@ -170,6 +177,11 @@ public final class MeteorEvents {
      */
     static void applySpeed(MeteorProjectileEntity meteor, @javax.annotation.Nullable MeteorVariant variant) {
         try {
+            // A meteor claimed by another mod with a registered look: that mod sets its fall speed (on every join, from
+            // OMM's base, the speed roll if present and its own multiplier), so the plain fallback never touches it.
+            if (variant == null && ForeignVariantLooks.isRegisteredClaim(meteor)) {
+                return;
+            }
             CompoundTag data = meteor.getPersistentData();
             double base;
             if (data.contains(BASE_ACCEL_KEY)) {

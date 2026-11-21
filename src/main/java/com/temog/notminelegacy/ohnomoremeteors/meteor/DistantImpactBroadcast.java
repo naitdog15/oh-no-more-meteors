@@ -54,6 +54,8 @@ public final class DistantImpactBroadcast {
             return;
         }
         MeteorVariant variant = MeteorVariant.fromEntity(meteor);
+        // Another mod's registered look brings its own distant sound; resolved once per impact.
+        ForeignLook foreign = variant == null ? MeteorVisuals.foreignLookOf(meteor) : null;
         Vec3 impact = meteor.position();
         ImpactFormula.Impact numbers = ImpactFormula.of(meteor, variant);
         double min = Config.DISTANT_IMPACT_MIN_DISTANCE.get();
@@ -82,6 +84,9 @@ public final class DistantImpactBroadcast {
 
             boolean isVeryFar = distance >= veryFar;
             SoundEvent sound = pick(variant, isVeryFar);
+            if (foreign != null) {
+                sound = pick(foreign, isVeryFar);
+            }
             // 1.0 just past the hearing edge, down to 0.35 at the edge of the meteor's hearing range.
             float distanceGain = 1.0F - 0.65F * (float) ((distance - min) / (max - min));
             float volume = Mth.clamp(master * sizeGain * distanceGain, 0.0F, Math.min(1.0F, Config.LOUDNESS_CAP.get().floatValue()));
@@ -94,6 +99,12 @@ public final class DistantImpactBroadcast {
             player.connection.send(new ClientboundSoundPacket(BuiltInRegistries.SOUND_EVENT.wrapAsHolder(sound),
                     SoundSource.WEATHER, at.x, at.y, at.z, volume, pitch, level.random.nextLong()));
         }
+    }
+
+    /** Another mod's look: its far / very far sound, or the plain meteor's when the look has none for that tier. */
+    private static SoundEvent pick(ForeignLook look, boolean veryFar) {
+        SoundEvent sound = veryFar ? look.distantVeryFar() : look.distantFar();
+        return sound != null ? sound : pick((MeteorVariant) null, veryFar);
     }
 
     private static SoundEvent pick(MeteorVariant variant, boolean veryFar) {

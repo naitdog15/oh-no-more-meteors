@@ -32,6 +32,20 @@ public final class ModCreativeTabs {
                         output.accept(ModItems.RAW_VEYRITE.get());
                         output.accept(ModItems.RAW_VEYRITE_BLOCK.get());
                         output.accept(ModItems.VEYRITE.get());
+                        output.accept(ModItems.TEKTITE.get());
+                        output.accept(ModItems.TEKTITE_STAIRS.get());
+                        output.accept(ModItems.TEKTITE_SLAB.get());
+                        output.accept(ModItems.TEKTITE_WALL.get());
+                        output.accept(ModItems.POLISHED_TEKTITE.get());
+                        output.accept(ModItems.POLISHED_TEKTITE_STAIRS.get());
+                        output.accept(ModItems.POLISHED_TEKTITE_SLAB.get());
+                        output.accept(ModItems.POLISHED_TEKTITE_WALL.get());
+                        output.accept(ModItems.TEKTITE_BRICKS.get());
+                        output.accept(ModItems.TEKTITE_BRICK_STAIRS.get());
+                        output.accept(ModItems.TEKTITE_BRICK_SLAB.get());
+                        output.accept(ModItems.TEKTITE_BRICK_WALL.get());
+                        output.accept(ModItems.CRACKED_TEKTITE_BRICKS.get());
+                        output.accept(ModItems.CHISELED_TEKTITE.get());
                         output.accept(ModFrostery.FROSTERY_ITEM.get());
                         // Gear: everything registered after the blocks (ingots, nuggets, tools, armour), in order.
                         boolean gear = false;

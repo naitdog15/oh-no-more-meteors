@@ -27,6 +27,9 @@ public abstract class MeteorRendererMixin {
 
     @Unique
     private static MeteorVariant onmm$drawing;
+    /** Another mod's look of the meteor being drawn (only when onmm$drawing is null), see ForeignVariantLooks. */
+    @Unique
+    private static com.temog.notminelegacy.ohnomoremeteors.meteor.ForeignLook onmm$drawingForeign;
 
     @Inject(method = {"render(Lme/emafire003/dev/ohmymeteors/entities/MeteorProjectileEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", "m_7392_(Lme/emafire003/dev/ohmymeteors/entities/MeteorProjectileEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"},
             at = @At("HEAD"), require = 0, remap = false)
@@ -39,6 +42,15 @@ public abstract class MeteorRendererMixin {
             // plain look
         }
         onmm$drawing = variant;
+        com.temog.notminelegacy.ohnomoremeteors.meteor.ForeignLook foreign = null;
+        if (variant == null) {
+            try {
+                foreign = MeteorVisuals.foreignLookOf(entity);
+            } catch (RuntimeException ignored) {
+                // plain look
+            }
+        }
+        onmm$drawingForeign = foreign;
     }
 
     @Inject(method = {"render(Lme/emafire003/dev/ohmymeteors/entities/MeteorProjectileEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V", "m_7392_(Lme/emafire003/dev/ohmymeteors/entities/MeteorProjectileEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/MultiBufferSource;I)V"},
@@ -46,6 +58,7 @@ public abstract class MeteorRendererMixin {
     private void onmm$forgetVariant(MeteorProjectileEntity entity, float yaw, float partialTick, PoseStack pose,
                                     MultiBufferSource buffers, int light, CallbackInfo ci) {
         onmm$drawing = null;
+        onmm$drawingForeign = null;
     }
 
     @ModifyArg(method = {"textureByHeight", "textureByDistance",
@@ -61,6 +74,10 @@ public abstract class MeteorRendererMixin {
     @Unique
     private static ResourceLocation onmm$swap(ResourceLocation original) {
         MeteorVariant variant = onmm$drawing;
+        com.temog.notminelegacy.ohnomoremeteors.meteor.ForeignLook foreign = onmm$drawingForeign;
+        if (variant == null && foreign != null) {
+            return MeteorVisuals.bodyTexture(foreign, original);
+        }
         return variant == null ? original : MeteorVisuals.bodyTexture(variant, original);
     }
 }

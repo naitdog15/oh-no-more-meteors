@@ -34,6 +34,8 @@ public final class MeteorTrail {
 
     /** Live special meteors and their variant. Identity based, server thread only. */
     private static final Map<Entity, MeteorVariant> TRACKED = new IdentityHashMap<>();
+    /** Live meteors of other mods' registered variants and their look (ForeignVariantLooks). Same rules as TRACKED. */
+    private static final Map<Entity, ForeignLook> TRACKED_FOREIGN = new IdentityHashMap<>();
 
     private MeteorTrail() {
     }
@@ -42,19 +44,28 @@ public final class MeteorTrail {
         TRACKED.put(meteor, variant);
     }
 
+    /** Tracks another mod's meteor with its look, resolved once here (never per emission). */
+    static void trackForeign(Entity meteor, ForeignLook look) {
+        TRACKED_FOREIGN.put(meteor, look);
+    }
+
     static void untrack(Entity meteor) {
         if (!TRACKED.isEmpty()) {
             TRACKED.remove(meteor);
+        }
+        if (!TRACKED_FOREIGN.isEmpty()) {
+            TRACKED_FOREIGN.remove(meteor);
         }
     }
 
     static void clear() {
         TRACKED.clear();
+        TRACKED_FOREIGN.clear();
     }
 
     /** Called once per server level tick (END phase). */
     static void tick(ServerLevel level) {
-        if (TRACKED.isEmpty()) {
+        if (TRACKED.isEmpty() && TRACKED_FOREIGN.isEmpty()) {
             return;
         }
         boolean enabled = Config.TRAIL_ENABLED.get();
@@ -77,6 +88,73 @@ public final class MeteorTrail {
             }
             budget -= emit(level, meteor, entry.getValue(), rangeSq, budget);
         }
+
+        // Other mods' looks: same cadence, range and budget (what is left of it after ours).
+        Iterator<Map.Entry<Entity, ForeignLook>> foreign = TRACKED_FOREIGN.entrySet().iterator();
+        while (foreign.hasNext()) {
+            Map.Entry<Entity, ForeignLook> entry = foreign.next();
+            Entity meteor = entry.getKey();
+            if (meteor.isRemoved()) {
+                foreign.remove();
+                continue;
+            }
+            if (!emitNow || meteor.level() != level || budget <= 0) {
+                continue;
+            }
+            budget -= emitForeign(level, meteor, entry.getValue(), rangeSq, budget);
+        }
+    }
+
+    /**
+     * One emission for another mod's meteor, shaped like the Veyrite trail: the look's spark (base + 1), flame and
+     * smoke, scaled by the look's trail density. A part the look has no particle for is skipped.
+     */
+    private static int emitForeign(ServerLevel level, Entity meteor, ForeignLook look, double rangeSq, int budget) {
+        double density = look.trailDensity();
+        if (!(density > 0.0D)) {
+            return 0;
+        }
+        Vec3 motion = meteor.getDeltaMovement();
+        double speed = motion.length();
+        Vec3 back = speed < 1.0E-2 ? new Vec3(0, 1, 0) : motion.scale(-1.0 / speed);
+
+        double width = meteor.getBbWidth();
+        double along = width * 0.5 + level.getRandom().nextDouble() * Math.min(speed, 4.0);
+        Vec3 base = meteor.position().add(0, meteor.getBbHeight() * 0.5, 0).add(back.scale(along));
+
+        int size = meteor instanceof MeteorProjectileEntity m ? m.getSize() : 1;
+        int baseCount = 1 + Math.min(3, size / 5);
+        int countPlus = VariantTuning.densityCount(baseCount + 1, density);
+        int one = VariantTuning.densityCount(1, density);
+        if (countPlus <= 0 && one <= 0) {
+            return 0;
+        }
+        double spread = 0.15 + width * 0.2;
+
+        List<ServerPlayer> near = new ArrayList<>();
+        List<Boolean> far = new ArrayList<>();
+        for (ServerPlayer p : level.players()) {
+            double d = p.distanceToSqr(base);
+            if (d <= rangeSq) {
+                near.add(p);
+                far.add(d > NEAR_SQ);
+            }
+        }
+        if (near.isEmpty()) {
+            return 0;
+        }
+
+        int spent = 0;
+        if (look.spark() != null) {
+            spent += send(level, near, far, look.spark(), base, countPlus, spread, 0.03, budget - spent);
+        }
+        if (look.flame() != null) {
+            spent += send(level, near, far, look.flame(), base.add(back.scale(0.5)), one, spread, 0.0, budget - spent);
+        }
+        if (look.smoke() != null) {
+            spent += send(level, near, far, look.smoke(), base.add(back.scale(1.0)), one, spread, 0.01, budget - spent);
+        }
+        return spent;
     }
 
     /** Sends one emission for one meteor; returns how many particles it spent from the budget. */

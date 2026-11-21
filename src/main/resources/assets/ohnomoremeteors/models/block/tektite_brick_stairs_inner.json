@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/inner_stairs",
+  "textures": {
+    "bottom": "ohnomoremeteors:block/tektite_bricks",
+    "top": "ohnomoremeteors:block/tektite_bricks",
+    "side": "ohnomoremeteors:block/tektite_bricks"
+  }
+}

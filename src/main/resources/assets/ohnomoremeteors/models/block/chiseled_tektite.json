@@ -1,0 +1,7 @@
+{
+  "parent": "minecraft:block/cube_column",
+  "textures": {
+    "end": "ohnomoremeteors:block/polished_tektite",
+    "side": "ohnomoremeteors:block/chiseled_tektite"
+  }
+}

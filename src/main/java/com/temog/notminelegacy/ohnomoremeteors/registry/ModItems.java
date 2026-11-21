@@ -49,6 +49,36 @@ public final class ModItems {
     public static final RegistryObject<Item> RAW_VEYRITE_BLOCK = ITEMS.register("raw_veyrite_block",
             () -> new BlockItem(ModBlocks.RAW_VEYRITE_BLOCK.get(), new Item.Properties()));
 
+    // ---- Tektite set (Veyrite crater rock): keep BEFORE CINDRITE_INGOT, the creative tab lists everything from it onward as gear ----
+    public static final RegistryObject<Item> TEKTITE = ITEMS.register("tektite",
+            () -> new BlockItem(ModBlocks.TEKTITE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TEKTITE_STAIRS = ITEMS.register("tektite_stairs",
+            () -> new BlockItem(ModBlocks.TEKTITE_STAIRS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TEKTITE_SLAB = ITEMS.register("tektite_slab",
+            () -> new BlockItem(ModBlocks.TEKTITE_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TEKTITE_WALL = ITEMS.register("tektite_wall",
+            () -> new BlockItem(ModBlocks.TEKTITE_WALL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> POLISHED_TEKTITE = ITEMS.register("polished_tektite",
+            () -> new BlockItem(ModBlocks.POLISHED_TEKTITE.get(), new Item.Properties()));
+    public static final RegistryObject<Item> POLISHED_TEKTITE_STAIRS = ITEMS.register("polished_tektite_stairs",
+            () -> new BlockItem(ModBlocks.POLISHED_TEKTITE_STAIRS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> POLISHED_TEKTITE_SLAB = ITEMS.register("polished_tektite_slab",
+            () -> new BlockItem(ModBlocks.POLISHED_TEKTITE_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> POLISHED_TEKTITE_WALL = ITEMS.register("polished_tektite_wall",
+            () -> new BlockItem(ModBlocks.POLISHED_TEKTITE_WALL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TEKTITE_BRICKS = ITEMS.register("tektite_bricks",
+            () -> new BlockItem(ModBlocks.TEKTITE_BRICKS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TEKTITE_BRICK_STAIRS = ITEMS.register("tektite_brick_stairs",
+            () -> new BlockItem(ModBlocks.TEKTITE_BRICK_STAIRS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TEKTITE_BRICK_SLAB = ITEMS.register("tektite_brick_slab",
+            () -> new BlockItem(ModBlocks.TEKTITE_BRICK_SLAB.get(), new Item.Properties()));
+    public static final RegistryObject<Item> TEKTITE_BRICK_WALL = ITEMS.register("tektite_brick_wall",
+            () -> new BlockItem(ModBlocks.TEKTITE_BRICK_WALL.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CRACKED_TEKTITE_BRICKS = ITEMS.register("cracked_tektite_bricks",
+            () -> new BlockItem(ModBlocks.CRACKED_TEKTITE_BRICKS.get(), new Item.Properties()));
+    public static final RegistryObject<Item> CHISELED_TEKTITE = ITEMS.register("chiseled_tektite",
+            () -> new BlockItem(ModBlocks.CHISELED_TEKTITE.get(), new Item.Properties()));
+
     // ---- Meteor metals: ingots and nuggets ----
     public static final RegistryObject<Item> CINDRITE_INGOT = simple("cindrite_ingot", true);
     public static final RegistryObject<Item> RIMERITE_INGOT = simple("rimerite_ingot", false);

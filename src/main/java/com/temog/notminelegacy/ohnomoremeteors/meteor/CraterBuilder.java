@@ -19,9 +19,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.FallingBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.common.Tags;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -67,14 +69,14 @@ public final class CraterBuilder {
      * crater skips it: an unanswered claim check must never let crater blocks overwrite someone's claim. The
      * failure is logged once per game run.
      */
-    private static final class ClaimGuard {
+    static final class ClaimGuard {
         /** One warning per game run is enough; afterwards failing positions are skipped quietly. */
         private static volatile boolean loggedFailure;
 
         private final ServerLevel level;
         private final Map<Long, Boolean> columns = new HashMap<>();
 
-        private ClaimGuard(ServerLevel level) {
+        ClaimGuard(ServerLevel level) {
             this.level = level;
         }
 
@@ -106,12 +108,43 @@ public final class CraterBuilder {
         private final boolean[] solidBefore;
         /** Climate band at the impact centre, read once before the blast (NEUTRAL when unknown). */
         private final ThermalReader.Band climate;
+        /** Per column (z * side + x): highest cube Y index of ground (a solid block that is not leaves or a log), -1 when none. */
+        private final int[] top;
 
-        private Snapshot(BlockPos min, int side, boolean[] solidBefore, ThermalReader.Band climate) {
+        private Snapshot(BlockPos min, int side, boolean[] solidBefore, ThermalReader.Band climate, int[] top) {
             this.min = min;
             this.side = side;
             this.solidBefore = solidBefore;
             this.climate = climate;
+            this.top = top;
+        }
+
+        /**
+         * World Y of the ground around the impact column before the blast: the median ground height of the columns 3 to 6
+         * blocks from the column (a fresh dig-in shaft or a tree on the column itself cannot skew it), or the column's own
+         * ground when the cube is too small for a ring. Integer.MIN_VALUE when unknown (no ground, or it reaches the top
+         * of the cube).
+         */
+        int groundY() {
+            int hw = (side - 1) / 2;
+            int[] ys = new int[side * side];
+            int n = 0;
+            for (int z = 0; z < side; z++) {
+                for (int x = 0; x < side; x++) {
+                    double d = Math.sqrt((x - hw) * (x - hw) + (z - hw) * (z - hw));
+                    int t = top[z * side + x];
+                    if (d < 3.0D || d > 6.0D || t < 0) {
+                        continue;
+                    }
+                    ys[n++] = t;
+                }
+            }
+            if (n == 0) {
+                int t = top[hw * side + hw];
+                return t < 0 ? Integer.MIN_VALUE : min.getY() + t;
+            }
+            Arrays.sort(ys, 0, n);
+            return min.getY() + ys[n / 2];
         }
 
         private int index(int x, int y, int z) {
@@ -147,7 +180,9 @@ public final class CraterBuilder {
         int side = halfWidth * 2 + 1;
         BlockPos min = centre.offset(-halfWidth, -halfWidth, -halfWidth);
         boolean[] solid = new boolean[side * side * side];
-        Snapshot snap = new Snapshot(min, side, solid, readClimate(level, centre));
+        int[] top = new int[side * side];
+        Arrays.fill(top, -1);
+        Snapshot snap = new Snapshot(min, side, solid, readClimate(level, centre), top);
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
         for (int y = 0; y < side; y++) {
             for (int z = 0; z < side; z++) {
@@ -158,6 +193,10 @@ public final class CraterBuilder {
                     }
                     BlockState state = level.getBlockState(pos);
                     solid[snap.index(x, y, z)] = !state.isAir() && state.getFluidState().isEmpty();
+                    if (state.blocksMotion() && state.getFluidState().isEmpty()
+                            && !state.is(BlockTags.LEAVES) && !state.is(BlockTags.LOGS)) {
+                        top[z * side + x] = y; // y ascends, so the last hit is the highest ground
+                    }
                 }
             }
         }
@@ -187,18 +226,231 @@ public final class CraterBuilder {
      * Returns the number of blocks written.
      */
     public static int build(ServerLevel level, Snapshot snap, MeteorVariant variant, ImpactFormula.Impact impact, BlockPos centre) {
+        return buildDry(level, snap, variant, impact, centre, null);
+    }
+
+    /**
+     * The dry build with the crater carve (2026-11-21): the blast alone leaves patchy holes (OMM's sphere explosion casts
+     * few rays), so before the lump is built every weak block in a solid bowl under the impact and along the meteor's
+     * last approach {@code approach} (its velocity, may be null) is cleared, and the lump is placed in that bowl with
+     * one block of air around it. Skipped (the old anchor logic stays) with meteor griefing off (no snapshot), in the
+     * LINED style, and when the ground cannot be read.
+     */
+    public static int buildDry(ServerLevel level, Snapshot snap, MeteorVariant variant, ImpactFormula.Impact impact, BlockPos centre, Vec3 approach) {
         lastCoreStats = "";
         if (Config.CRATER_STYLE.get() == Config.CraterStyle.LINED) {
             return build(level, snap, variant);
         }
-        return buildCore(level, snap, variant, impact, centre);
+        Carve carve = snap == null ? null : carve(level, snap, impact, approach);
+        int written = buildCore(level, snap, variant, impact, centre, null, carve);
+        return written + (carve == null ? 0 : carve.cleared);
+    }
+
+    /**
+     * Wet landing (2026-11-21): always the CORE lump. Water and lava cells count as candidates, so the cluster keeps
+     * its shape; a SETTLE landing (no blast, snap may be null) rests the lump on the floor using fluid cells only.
+     * {@code wet} null is the dry build above.
+     */
+    public static int build(ServerLevel level, Snapshot snap, MeteorVariant variant, ImpactFormula.Impact impact, BlockPos centre, FluidLanding.Wet wet) {
+        lastCoreStats = "";
+        return buildCore(level, snap, variant, impact, centre, wet, null);
     }
 
     /** Short description of the last CORE build (blast-hole cells, candidates, chosen), for the impact log. */
     static String lastCoreStats = "";
 
+    /** The description of the last CORE build (game tests read it). */
+    public static String lastCoreStats() {
+        return lastCoreStats;
+    }
+
     /** Vertical squash of the meteorite lump (a slightly flattened ball). */
     private static final double LUMP_SQUASH = 0.75D;
+
+    /** A block is weak (the crater carve removes it) at or under this hardness... */
+    private static final float WEAK_MAX_HARDNESS = 3.0F;
+    /** ...and at or under this blast resistance (dirt, sand, gravel, leaves, logs, stone, deepslate; not obsidian, end stone). */
+    private static final float WEAK_MAX_RESISTANCE = 6.0F;
+
+    /** The lump ball radius for an impact (shared by the carve and the lump). */
+    private static double lumpRadius(ImpactFormula.Impact impact) {
+        int lump = Math.max(1, impact.lumpBlocks());
+        return Math.max(0.75D, Math.cbrt(3.0D * lump / (4.0D * Math.PI * LUMP_SQUASH)));
+    }
+
+    /**
+     * Weak = the crater carve may remove it: not air, no fluid, destroy speed 0..3, blast resistance <= 6, no block entity,
+     * not meteor_explosion_safe, not an ore (forge:ores), not this mod's own or a storage block. No randomness.
+     */
+    public static boolean weak(ServerLevel level, BlockPos pos, BlockState state) {
+        if (state.isAir() || !state.getFluidState().isEmpty()) {
+            return false;
+        }
+        float hardness = state.getDestroySpeed(level, pos);
+        if (hardness < 0.0F || hardness > WEAK_MAX_HARDNESS) {
+            return false;
+        }
+        if (state.getBlock().getExplosionResistance() > WEAK_MAX_RESISTANCE) {
+            return false;
+        }
+        if (state.hasBlockEntity() || state.is(OhMyMeteors.METEOR_EXPLOSION_SAFE) || state.is(Tags.Blocks.ORES)) {
+            return false;
+        }
+        return !isOwnOrStorage(state);
+    }
+
+    /** Our own blocks and player storage blocks (iron/gold/diamond blocks, the raw cindrite/rimerite blocks...). */
+    private static boolean isOwnOrStorage(BlockState state) {
+        return state.getBlock() instanceof CindriteBlock || state.getBlock() instanceof RimeriteBlock
+                || state.getBlock() instanceof VeyriteBlock
+                || state.is(ModBlocks.RAW_CINDRITE_BLOCK.get()) || state.is(ModBlocks.RAW_RIMERITE_BLOCK.get())
+                || state.is(ModBlocks.RAW_VEYRITE_BLOCK.get())
+                || state.is(Tags.Blocks.STORAGE_BLOCKS);
+    }
+
+    /** What the carve did: the bowl (ground, depth, radius, column) and the lump core it fixes. */
+    static final class Carve {
+        final int ground;
+        final int depth;
+        final int radius;
+        final int cx;
+        final int cz;
+        final int coreY;
+        int cleared;
+        int margin;
+
+        Carve(int ground, int depth, int radius, int cx, int cz, int coreY) {
+            this.ground = ground;
+            this.depth = depth;
+            this.radius = radius;
+            this.cx = cx;
+            this.cz = cz;
+            this.coreY = coreY;
+        }
+
+        BlockPos core() {
+            return new BlockPos(cx, coreY, cz);
+        }
+
+        /** Bowl surface height at a column: the solid floor top; the ground itself outside the bowl. */
+        double surface(int wx, int wz) {
+            double d = Math.sqrt((wx - cx) * (double) (wx - cx) + (wz - cz) * (double) (wz - cz));
+            return d <= radius ? ground - depth * (1.0D - d * d / ((double) radius * radius)) : ground;
+        }
+    }
+
+    /**
+     * The crater carve: clears every weak block of a solid bowl and of a tube along the approach, bottom up, with the
+     * claim check and the write cap (it leaves room for the lump). No randomness, so the same terrain gives the same
+     * carve. Returns null when nothing is carved (ground unknown, or nothing weak in the way).
+     *
+     * Bowl: radius Rb = clamp(round(0.6 * power), 2, halfWidth - 1), depth Db = max(2, ceil(0.5 Rb), ceil(1.4 * lump half
+     * height)); solid floor top at ground - Db, surface ground - Db * (1 - d^2 / Rb^2), cleared up to ground + 3.
+     * The lump core is then fixed at (ground - Db) + ceil(half height) - embed, embed = max(1, round(0.6 * half height)).
+     */
+    private static Carve carve(ServerLevel level, Snapshot snap, ImpactFormula.Impact impact, Vec3 approach) {
+        int ground = snap.groundY();
+        if (ground == Integer.MIN_VALUE) {
+            return null;
+        }
+        int side = snap.side;
+        int hw = (side - 1) / 2;
+        double ballRadius = lumpRadius(impact);
+        double hl = ballRadius * LUMP_SQUASH;
+        int rb = Math.max(2, Math.min((int) Math.round(0.6D * impact.power()), hw - 1));
+        int db = Math.max(2, Math.max((int) Math.ceil(0.5D * rb), (int) Math.ceil(1.4D * hl)));
+        int embed = Math.max(1, (int) Math.round(0.6D * hl));
+        int cx = snap.min.getX() + hw;
+        int cz = snap.min.getZ() + hw;
+        int coreY = ground - db + (int) Math.ceil(hl) - embed;
+        Carve carve = new Carve(ground, db, rb, cx, cz, coreY);
+        int minY = snap.min.getY();
+
+        boolean[] mask = new boolean[side * side * side];
+        for (int z = 0; z < side; z++) {
+            for (int x = 0; x < side; x++) {
+                int wx = snap.min.getX() + x;
+                int wz = snap.min.getZ() + z;
+                double d = Math.sqrt((wx - cx) * (double) (wx - cx) + (wz - cz) * (double) (wz - cz));
+                if (d > rb) {
+                    continue;
+                }
+                double bs = carve.surface(wx, wz);
+                for (int y = 0; y < side; y++) {
+                    int wy = minY + y;
+                    if (wy > bs + 1.0E-6D && wy <= ground + 3) {
+                        mask[snap.index(x, y, z)] = true;
+                    }
+                }
+            }
+        }
+        // The tube along the last approach: from the core point back along -velocity (straight up when it is unknown).
+        double ux = 0.0D, uy = 1.0D, uz = 0.0D;
+        if (approach != null && approach.length() >= 0.05D) {
+            Vec3 u = approach.normalize().scale(-1.0D);
+            ux = u.x;
+            uy = u.y;
+            uz = u.z;
+        }
+        double tubeR = Math.ceil(ballRadius) + 0.5D;
+        int steps = (int) Math.ceil((db + 4) / 0.5D);
+        int r = (int) Math.ceil(tubeR);
+        for (int s = 0; s <= steps; s++) {
+            double px = cx + 0.5D + ux * 0.5D * s;
+            double py = coreY + 0.5D + uy * 0.5D * s;
+            double pz = cz + 0.5D + uz * 0.5D * s;
+            for (int dy = -r; dy <= r; dy++) {
+                for (int dz = -r; dz <= r; dz++) {
+                    for (int dx = -r; dx <= r; dx++) {
+                        int bx = (int) Math.floor(px) + dx;
+                        int by = (int) Math.floor(py) + dy;
+                        int bz = (int) Math.floor(pz) + dz;
+                        double ex = bx + 0.5D - px;
+                        double ey = by + 0.5D - py;
+                        double ez = bz + 0.5D - pz;
+                        if (ex * ex + ey * ey + ez * ez > tubeR * tubeR) {
+                            continue;
+                        }
+                        int x = bx - snap.min.getX();
+                        int y = by - minY;
+                        int z = bz - snap.min.getZ();
+                        if (x >= 0 && y >= 0 && z >= 0 && x < side && y < side && z < side) {
+                            mask[snap.index(x, y, z)] = true;
+                        }
+                    }
+                }
+            }
+        }
+
+        ClaimGuard claims = new ClaimGuard(level);
+        int writeCap = Config.CRATER_MAX_BLOCK_WRITES.get();
+        int budget = Math.max(writeCap / 2, writeCap - Math.max(1, impact.lumpBlocks()) - 64);
+        BlockState air = Blocks.AIR.defaultBlockState();
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        outer:
+        for (int y = 0; y < side; y++) {
+            for (int z = 0; z < side; z++) {
+                for (int x = 0; x < side; x++) {
+                    if (!mask[snap.index(x, y, z)]) {
+                        continue;
+                    }
+                    pos.set(snap.min.getX() + x, minY + y, snap.min.getZ() + z);
+                    if (level.isOutsideBuildHeight(pos) || !level.hasChunkAt(pos)) {
+                        continue;
+                    }
+                    if (!weak(level, pos, level.getBlockState(pos)) || !claims.allows(pos)) {
+                        continue;
+                    }
+                    if (carve.cleared >= budget) {
+                        break outer;
+                    }
+                    level.setBlock(pos, air, WRITE_FLAGS);
+                    carve.cleared++;
+                }
+            }
+        }
+        return carve.cleared > 0 ? carve : null;
+    }
 
     /**
      * CORE style (2026-11-19, OMM-like): a compact meteorite lump at the bottom of the blast hole, half sunk into the
@@ -207,51 +459,36 @@ public final class CraterBuilder {
      * cells and plain replaceable blocks are used, with the same claim and protection checks as the lined crater.
      * The Rimerite snow/freeze aftermath still runs. Nothing is built when the blast removed nothing.
      */
-    private static int buildCore(ServerLevel level, Snapshot snap, MeteorVariant variant, ImpactFormula.Impact impact, BlockPos centre) {
-        if (snap == null) {
+    private static int buildCore(ServerLevel level, Snapshot snap, MeteorVariant variant, ImpactFormula.Impact impact, BlockPos centre, FluidLanding.Wet wet, Carve carve) {
+        if (snap == null && wet == null) {
             return 0;
         }
-        int side = snap.side;
-        boolean[] hollow = findHollow(level, snap);
-        if (hollow == null) {
+        int side = snap == null ? 0 : snap.side;
+        boolean[] hollow = snap == null ? null : findHollow(level, snap);
+        if (hollow == null && wet == null) {
             lastCoreStats = "no blast hole";
             return 0;
         }
+        // Fluid cells join the lump's candidates on a wet landing, and (fillExposedFluid) when a dry blast hole opens onto fluid.
+        boolean settle = wet != null && (wet.mode() == FluidLanding.Mode.SETTLE || hollow == null);
+        boolean fluidCells = wet != null || (Config.FL_ENABLED.get() && Config.FL_FILL_EXPOSED_FLUID.get() && hollowTouchesFluid(level, snap, hollow));
         RandomSource random = level.getRandom();
         ClaimGuard claims = new ClaimGuard(level);
-        int cap = Config.CRATER_MAX_BLOCK_WRITES.get();
+        // The carve's writes count against the same cap (it kept lump + 64 blocks back for the lump and the margin).
+        int cap = Config.CRATER_MAX_BLOCK_WRITES.get() - (carve == null ? 0 : carve.cleared);
 
-        // Anchor: the bottom of the blast hole near the impact column (deepest blasted-out cell, preferring cells
-        // close to the column). The impact point itself can be in open air (a meteor that clipped a tree).
-        int cx = Mth.clamp(centre.getX() - snap.min.getX(), 0, side - 1);
-        int cz = Mth.clamp(centre.getZ() - snap.min.getZ(), 0, side - 1);
-        int bestIndex = -1;
-        double bestScore = Double.MAX_VALUE;
-        for (int y = 0; y < side; y++) {
-            for (int z = 0; z < side; z++) {
-                for (int x = 0; x < side; x++) {
-                    if (!hollow[snap.index(x, y, z)]) {
-                        continue;
-                    }
-                    double score = y + 0.5D * Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
-                    if (score < bestScore) {
-                        bestScore = score;
-                        bestIndex = snap.index(x, y, z);
-                    }
-                }
-            }
-        }
-        int bx = bestIndex % side;
-        int bz = (bestIndex / side) % side;
-        int by = bestIndex / (side * side);
-        BlockPos core = new BlockPos(snap.min.getX() + bx, snap.min.getY() + by, snap.min.getZ() + bz);
+        BlockPos core = settle ? null : (carve != null ? carve.core() : hollowAnchor(snap, hollow, centre));
 
         int lump = Math.max(1, impact.lumpBlocks());
         int ore = Math.min(lump, Math.max(1, impact.resources()));
-        double radius = Math.max(0.75D, Math.cbrt(3.0D * lump / (4.0D * Math.PI * LUMP_SQUASH)));
+        double radius = lumpRadius(impact);
         // Search wide enough that a lump fits even in a shallow or odd-shaped hole; the nearest cells win anyway.
         double maxNorm = 2.6D;
         int reach = (int) Math.ceil(radius * maxNorm) + 1;
+        if (core == null) {
+            // SETTLE: no blast hole. The squashed ball rests on the floor, its lowest layer touching it.
+            core = new BlockPos(centre.getX(), wet.floorTop().getY() + (int) Math.ceil(radius * LUMP_SQUASH) - 1, centre.getZ());
+        }
 
         // Candidates: blasted-out cells of the crater and plain replaceable blocks, ranked by distance plus noise.
         // Each entry: {rank score, ore score, x, y, z}.
@@ -269,13 +506,19 @@ public final class CraterBuilder {
                     if (level.isOutsideBuildHeight(pos) || !level.hasChunkAt(pos)) {
                         continue;
                     }
-                    int x = pos.getX() - snap.min.getX();
-                    int y = pos.getY() - snap.min.getY();
-                    int z = pos.getZ() - snap.min.getZ();
-                    boolean inCube = x >= 0 && y >= 0 && z >= 0 && x < side && y < side && z < side;
+                    int x = snap == null ? -1 : pos.getX() - snap.min.getX();
+                    int y = snap == null ? -1 : pos.getY() - snap.min.getY();
+                    int z = snap == null ? -1 : pos.getZ() - snap.min.getZ();
+                    boolean inCube = hollow != null && x >= 0 && y >= 0 && z >= 0 && x < side && y < side && z < side;
                     BlockState now = level.getBlockState(pos);
                     boolean blasted = inCube && hollow[snap.index(x, y, z)] && (now.isAir() || now.is(BlockTags.FIRE));
-                    if (!blasted && !canReplace(level, pos, now)) {
+                    if (settle) {
+                        // Nothing is destroyed: only fluid cells take the lump.
+                        if (!FluidLanding.isFluidCell(level, pos, now)) {
+                            continue;
+                        }
+                    } else if (!blasted && !canReplace(level, pos, now) && !(fluidCells && FluidLanding.isFluidCell(level, pos, now))
+                            && !(carve != null && now.isAir())) { // a carved bowl: the air above the old ground takes the lump too
                         continue;
                     }
                     cells.add(new double[]{norm + random.nextDouble() * 0.45D, norm + random.nextDouble() * 0.6D,
@@ -296,10 +539,21 @@ public final class CraterBuilder {
             }
         }
         int holeCells = 0;
-        for (boolean b : hollow) {
-            if (b) holeCells++;
+        if (hollow != null) {
+            for (boolean b : hollow) {
+                if (b) holeCells++;
+            }
         }
         lastCoreStats = "hole " + holeCells + ", core " + core.toShortString() + ", candidates " + cells.size() + ", chosen " + chosen.size();
+        if (carve != null) {
+            lastCoreStats += ", carve " + carve.cleared + " (ground " + carve.ground + ", floor " + (carve.ground - carve.depth)
+                    + ", r " + carve.radius + ")";
+        }
+        if (wet != null) {
+            lastCoreStats += ", wet " + (settle ? "settle" : "blast");
+        } else if (fluidCells) {
+            lastCoreStats += ", exposed fluid filled";
+        }
         // Ore goes to the cells with the lowest ore score (towards the middle, with some scatter).
         List<double[]> byOre = new ArrayList<>(chosen);
         byOre.sort(Comparator.comparingDouble(c -> c[1]));
@@ -327,6 +581,37 @@ public final class CraterBuilder {
             writes++;
         }
 
+        // Air margin (carved bowl only): every weak block touching the lump above the bowl surface is cleared, so the lump
+        // has at least one block of air around it everywhere except where it sits in the ground.
+        if (carve != null) {
+            Set<Long> lumpCells = new HashSet<>();
+            for (double[] c : chosen) {
+                lumpCells.add(BlockPos.asLong((int) c[2], (int) c[3], (int) c[4]));
+            }
+            BlockPos.MutableBlockPos n = new BlockPos.MutableBlockPos();
+            BlockState airState = Blocks.AIR.defaultBlockState();
+            marginLoop:
+            for (double[] c : chosen) {
+                for (Direction d : Direction.values()) {
+                    n.set((int) c[2] + d.getStepX(), (int) c[3] + d.getStepY(), (int) c[4] + d.getStepZ());
+                    if (lumpCells.contains(n.asLong()) || n.getY() <= carve.surface(n.getX(), n.getZ()) + 1.0E-6D
+                            || level.isOutsideBuildHeight(n) || !level.hasChunkAt(n)) {
+                        continue;
+                    }
+                    if (!weak(level, n, level.getBlockState(n)) || !claims.allows(n)) {
+                        continue;
+                    }
+                    if (writes >= cap) {
+                        break marginLoop;
+                    }
+                    level.setBlock(n, airState, WRITE_FLAGS);
+                    writes++;
+                    carve.margin++;
+                }
+            }
+            lastCoreStats += ", margin " + carve.margin + ", core y " + carve.coreY;
+        }
+
         // Cindrite: now and then a small sealed lava pocket inside the lump (never where it could run out).
         if (variant == MeteorVariant.CINDRITE && random.nextDouble() < Config.CINDRITE_LAVA_POCKET_CHANCE.get()) {
             int want = 1 + random.nextInt(Math.max(1, Config.CINDRITE_LAVA_POCKET_MAX.get()));
@@ -349,11 +634,67 @@ public final class CraterBuilder {
             lastCoreStats += ", lava " + placed;
         }
 
-        if (variant == MeteorVariant.RIMERITE && writes < cap) {
+        if (variant == MeteorVariant.RIMERITE && writes < cap && hollow != null && !(wet != null && wet.lava())) {
             boolean snow = snap.climate != ThermalReader.Band.HOT;
             writes += iceAftermath(level, snap, hollow, random, cap - writes, claims, new HashSet<>(), snow);
         }
         return writes;
+    }
+
+    /** True when any blasted-out cell of a dry crater has a water or lava block (not waterlogged) beside it. Reads blocks only. */
+    private static boolean hollowTouchesFluid(ServerLevel level, Snapshot snap, boolean[] hollow) {
+        if (snap == null || hollow == null) {
+            return false;
+        }
+        int side = snap.side;
+        BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
+        for (int y = 0; y < side; y++) {
+            for (int z = 0; z < side; z++) {
+                for (int x = 0; x < side; x++) {
+                    if (!hollow[snap.index(x, y, z)]) {
+                        continue;
+                    }
+                    for (Direction d : Direction.values()) {
+                        pos.set(snap.min.getX() + x + d.getStepX(), snap.min.getY() + y + d.getStepY(), snap.min.getZ() + z + d.getStepZ());
+                        if (!level.isOutsideBuildHeight(pos) && level.hasChunkAt(pos)
+                                && level.getBlockState(pos).getBlock() instanceof net.minecraft.world.level.block.LiquidBlock) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /** The bottom of the blast hole near the impact column (the CORE lump's anchor). */
+    private static BlockPos hollowAnchor(Snapshot snap, boolean[] hollow, BlockPos centre) {
+        int side = snap.side;
+        // Anchor: the bottom of the blast hole near the impact column (deepest blasted-out cell, preferring cells
+        // close to the column). The impact point itself can be in open air (a meteor that clipped a tree).
+        int cx = Mth.clamp(centre.getX() - snap.min.getX(), 0, side - 1);
+        int cz = Mth.clamp(centre.getZ() - snap.min.getZ(), 0, side - 1);
+        int bestIndex = -1;
+        double bestScore = Double.MAX_VALUE;
+        for (int y = 0; y < side; y++) {
+            for (int z = 0; z < side; z++) {
+                for (int x = 0; x < side; x++) {
+                    if (!hollow[snap.index(x, y, z)]) {
+                        continue;
+                    }
+                    double score = y + 0.5D * Math.sqrt((x - cx) * (x - cx) + (z - cz) * (z - cz));
+                    if (score < bestScore) {
+                        bestScore = score;
+                        bestIndex = snap.index(x, y, z);
+                    }
+                }
+            }
+        }
+        int bx = bestIndex % side;
+        int bz = (bestIndex / side) % side;
+        int by = bestIndex / (side * side);
+        BlockPos core = new BlockPos(snap.min.getX() + bx, snap.min.getY() + by, snap.min.getZ() + bz);
+        return core;
     }
 
     /** True when the blocks below and on all four sides are solid, non-fluid blocks (lava placed here cannot flow out). */
@@ -371,14 +712,17 @@ public final class CraterBuilder {
         return true;
     }
 
-    /** The rock around the ore in a meteorite lump, per variant. */
-    private static BlockState filler(MeteorVariant variant, RandomSource random) {
+    /** The rock around the ore in a meteorite lump, per variant (public: the Komit Kitty capsule's outer shell reuses it). */
+    public static BlockState filler(MeteorVariant variant, RandomSource random) {
         double r = random.nextDouble();
-        return switch (variant) {
+        BlockState state = switch (variant) {
             case CINDRITE -> (r < 0.55D ? Blocks.BLACKSTONE : r < 0.85D ? Blocks.BASALT : Blocks.SMOOTH_BASALT).defaultBlockState();
             case RIMERITE -> (r < 0.5D ? Blocks.PACKED_ICE : r < 0.85D ? ModBlocks.RIME_WORN_STONE.get() : Blocks.SNOW_BLOCK).defaultBlockState();
-            case VEYRITE -> (r < 0.45D ? Blocks.COBBLED_DEEPSLATE : r < 0.85D ? Blocks.TUFF : Blocks.AMETHYST_BLOCK).defaultBlockState();
+            case VEYRITE -> (r < 0.5D ? ModBlocks.TEKTITE.get() : r < 0.85D ? Blocks.DEEPSLATE : Blocks.CRYING_OBSIDIAN).defaultBlockState();
         };
+        // Crater extras (other mods' blocks in the stone filler, tag crater_extras/<variant>): draws nothing more when
+        // the tag is empty, the chance is 0 or the filler is not stone, so craters without extras stay exactly as before.
+        return CraterExtras.apply(variant, state, random);
     }
 
     /** Every cube cell that was solid before the blast and is air or fire now; null when there is none. */
@@ -676,11 +1020,7 @@ public final class CraterBuilder {
             return false;
         }
         // Our own blocks and player storage blocks (iron/gold/diamond blocks, the raw cindrite/rimerite blocks...) stay.
-        if (state.getBlock() instanceof CindriteBlock || state.getBlock() instanceof RimeriteBlock
-                || state.getBlock() instanceof VeyriteBlock
-                || state.is(ModBlocks.RAW_CINDRITE_BLOCK.get()) || state.is(ModBlocks.RAW_RIMERITE_BLOCK.get())
-                || state.is(ModBlocks.RAW_VEYRITE_BLOCK.get())
-                || state.is(Tags.Blocks.STORAGE_BLOCKS)) {
+        if (isOwnOrStorage(state)) {
             return false;
         }
         return state.isCollisionShapeFullBlock(level, pos);

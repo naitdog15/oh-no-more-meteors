@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "ohnomoremeteors:block/tektite_brick_slab"
+    },
+    "type=double": {
+      "model": "ohnomoremeteors:block/tektite_bricks"
+    },
+    "type=top": {
+      "model": "ohnomoremeteors:block/tektite_brick_slab_top"
+    }
+  }
+}

@@ -40,5 +40,13 @@ versionRange="[1.2.0,)"
 ordering="AFTER"
 side="BOTH"
 
+# Just Enough Items is OPTIONAL: when present, the Frostery's freezing recipes get their own JEI tab.
+[[dependencies.${mod_id}]]
+modId="jei"
+mandatory=false
+versionRange="[15.0,)"
+ordering="NONE"
+side="CLIENT"
+
 [[mixins]]
 config="ohnomoremeteors.mixins.json"

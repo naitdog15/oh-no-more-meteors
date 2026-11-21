@@ -137,6 +137,8 @@ stageRunModJar(file("run/mods_raw/${omm_jar}"), 'ohmymeteors', omm_version,
         "download Oh My, Meteors! ${omm_version} (Forge 1.20.1) into run/mods_raw first")
 stageRunModJar(file("run/mods_raw/${nml_jar}"), 'notminelegacy', nml_version,
         "copy notminelegacy-${nml_version}.jar (built by the Not Mine Legacy repo) into run/mods_raw first")
+stageRunModJar(file("run/mods_raw/${jei_jar}"), 'jei', jei_version,
+        "download JEI ${jei_version} (Forge 1.20.1) into run/mods_raw first (compile-only, for the optional JEI tab)")
 
 repositories {
     // Same repository list as Building Bridges (keeps the offline Gradle cache valid).
@@ -168,6 +170,10 @@ dependencies {
     // (com.temog.notminelegacy.environment.temperature). Compile classpath, plus dev runs. Never shipped inside this mod's jar.
     compileOnly fg.deobf("local.runmods:notminelegacy:${nml_version}")
     runtimeOnly fg.deobf("local.runmods:notminelegacy:${nml_version}")
+
+    // Just Enough Items - OPTIONAL (mods.toml). Compile-only: the @JeiPlugin class in compat/jei is only loaded by
+    // JEI itself, so the mod runs without it. Never shipped inside this mod's jar.
+    compileOnly fg.deobf("local.runmods:jei:${jei_version}")
 }
 
 def sharedReplaceProperties = [

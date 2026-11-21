@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "key": {
+    "#": {
+      "item": "ohnomoremeteors:polished_tektite"
+    }
+  },
+  "pattern": [
+    "###"
+  ],
+  "result": {
+    "item": "ohnomoremeteors:polished_tektite_slab",
+    "count": 6
+  }
+}

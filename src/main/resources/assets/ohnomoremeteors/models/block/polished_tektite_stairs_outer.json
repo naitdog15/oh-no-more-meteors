@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/outer_stairs",
+  "textures": {
+    "bottom": "ohnomoremeteors:block/polished_tektite",
+    "top": "ohnomoremeteors:block/polished_tektite",
+    "side": "ohnomoremeteors:block/polished_tektite"
+  }
+}

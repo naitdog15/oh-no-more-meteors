@@ -532,5 +532,19 @@
         "weight": 1
       }
     ]
+  },
+  "komit_kitty.warning": {
+    "sounds": [
+      {"name": "minecraft:block/bell/resonate", "pitch": 0.75, "attenuation_distance": 16}
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.komit_kitty.warning"
+  },
+  "komit_kitty.arrival": {
+    "sounds": [
+      {"name": "ohnomoremeteors:distant/veyrite/far/1", "pitch": 0.8, "attenuation_distance": 16},
+      {"name": "ohnomoremeteors:distant/veyrite/far/2", "pitch": 0.8, "attenuation_distance": 16},
+      {"name": "ohnomoremeteors:distant/veyrite/far/3", "pitch": 0.8, "attenuation_distance": 16}
+    ],
+    "subtitle": "subtitles.ohnomoremeteors.komit_kitty.arrival"
   }
 }

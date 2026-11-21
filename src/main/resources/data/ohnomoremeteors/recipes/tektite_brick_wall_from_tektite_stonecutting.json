@@ -1,0 +1,8 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "ohnomoremeteors:tektite"
+  },
+  "result": "ohnomoremeteors:tektite_brick_wall",
+  "count": 1
+}

@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "type=bottom": {
+      "model": "ohnomoremeteors:block/polished_tektite_slab"
+    },
+    "type=double": {
+      "model": "ohnomoremeteors:block/polished_tektite"
+    },
+    "type=top": {
+      "model": "ohnomoremeteors:block/polished_tektite_slab_top"
+    }
+  }
+}
